@@ -1,6 +1,5 @@
-"use client"
-export default function HomePage() {
-  return (
-    <div>admin-dashboard</div>
-  )
+import { redirect } from 'next/navigation';
+
+export default function Home() {
+  redirect('/menu');
 }
