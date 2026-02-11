@@ -1,10 +1,7 @@
 import axios from 'axios';
 import { ApiRequestConfig } from './types';
 
-// Use dynamic baseURL based on environment
-const baseURL = process.env.NODE_ENV === 'production'
-    ? process.env.NEXT_PUBLIC_API_URL_PRODUCTION
-    : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const baseURL = '/api';
 
 const api = axios.create({
     baseURL,
