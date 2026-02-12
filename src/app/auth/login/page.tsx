@@ -198,7 +198,7 @@ function LoginForm() {
     return (
         <div className="flex min-h-screen items-center justify-center 
     bg-gradient-to-br from-sky-100 via-white to-sky-200 
-    dark:from-slate-900 dark:via-slate-900 dark:to-slate-800
+    dark:from-slate-950 dark:via-slate-900 dark:to-slate-950
     px-4 py-12 sm:px-6 lg:px-8">
 
             <div className="w-full max-w-md space-y-8 
@@ -208,7 +208,7 @@ function LoginForm() {
 
                 {/* Header */}
                 <div className="text-center">
-                    <div className="mx-auto w-14 h-14 flex items-center justify-center shadow-sky-200">
+                    <div className="mx-auto w-14 h-14 flex items-center justify-center shadow-sky-200 rounded-full bg-transparent dark:bg-slate-800/50">
                         <Image src={logo} alt="MSS-Logo" width={100} height={100} />
                     </div>
 
