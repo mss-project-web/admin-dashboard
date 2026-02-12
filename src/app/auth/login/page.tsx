@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api/auth";
-import { handleApiError } from "@/lib/axios/index"; // Explicit index import
+import { handleApiError } from "@/lib/axios/index";
 import Image from "next/image";
 import logo from "../../../../public/Image/LOGO-MSS.png";
 import { Eye, EyeOff } from "lucide-react";
@@ -131,7 +131,10 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            await authApi.login({ email: cleanEmail, password: cleanPassword });
+            const response = await authApi.login({ email: cleanEmail, password: cleanPassword });
+
+            // Note: We rely on the server to set the HTTP-Only cookie (or accessible cookie).
+            // We no longer store token/user info in localStorage.
 
             setFailedAttempts(0);
             deleteSecCookie(ATTEMPTS_KEY);

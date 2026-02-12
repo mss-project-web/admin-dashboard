@@ -15,4 +15,8 @@ export const authApi = {
         await api.post('/auth/refresh');
     },
 
+    // me: async () => {
+    //     const response = await api.get<{ status: string, data: any }>('/auth/me'); 
+    //     return response.data.data;
+    // }
 };

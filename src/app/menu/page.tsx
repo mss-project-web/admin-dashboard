@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api/auth";
 import { systemApi } from "@/lib/api/system";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function MenuPage() {
     const router = useRouter();
+    const { user } = useAuth();
     const [dbStatus, setDbStatus] = useState<string>("Checking...");
     const [dbColor, setDbColor] = useState<string>("text-slate-400");
     const [sysStatus, setSysStatus] = useState<string>("Checking...");
@@ -74,10 +76,18 @@ export default function MenuPage() {
                             <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
                                 ยินดีต้อนรับสู่ <span className="text-sky-500">MSS Admin</span>
                             </h1>
+                            <div className="mt-2 space-y-2">
+                                <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base max-w-2xl leading-relaxed">
+                                    ระบบจัดการหลังบ้านแบบครบวงจร <span className="text-sky-500 font-medium">เลือกเมนูที่คุณต้องการ</span> เพื่อเริ่มต้นทำงานได้อย่างรวดเร็ว
+                                </p>
 
-                            <p className="mt-3 text-slate-500 dark:text-slate-400 text-sm md:text-base max-w-2xl">
-                                ระบบจัดการหลังบ้านแบบครบวงจร เลือกเมนูที่คุณต้องการจัดการเพื่อเริ่มต้นทำงาน
-                            </p>
+                                <div className="flex items-center gap-2 text-xs md:text-sm">
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full border border-slate-200 dark:border-slate-700">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> {/* จุดสีเขียวบอกสถานะ Online */}
+                                        {user?.firstName} {user?.lastName}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex justify-center md:justify-end mt-4 lg:mt-0">
