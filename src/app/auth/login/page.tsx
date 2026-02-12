@@ -9,7 +9,9 @@ import Image from "next/image";
 import logo from "../../../../public/Image/LOGO-MSS.png";
 import { Eye, EyeOff } from "lucide-react";
 
-export default function LoginPage() {
+import { Suspense } from "react";
+
+function LoginForm() {
     const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -301,5 +303,13 @@ export default function LoginPage() {
                 </form>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div></div>}>
+            <LoginForm />
+        </Suspense>
     );
 }
