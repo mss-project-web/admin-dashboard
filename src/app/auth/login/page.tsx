@@ -198,12 +198,13 @@ function LoginForm() {
     return (
         <div className="flex min-h-screen items-center justify-center 
     bg-gradient-to-br from-sky-100 via-white to-sky-200 
+    dark:from-slate-900 dark:via-slate-900 dark:to-slate-800
     px-4 py-12 sm:px-6 lg:px-8">
 
             <div className="w-full max-w-md space-y-8 
-        bg-white/80 backdrop-blur-xl
-        border border-sky-100
-        p-10 shadow-2xl rounded-3xl">
+        bg-white/80 backdrop-blur-xl dark:bg-slate-900/80
+        border border-sky-100 dark:border-slate-800
+        p-10 shadow-2xl rounded-3xl dark:shadow-slate-900/20">
 
                 {/* Header */}
                 <div className="text-center">
@@ -211,11 +212,11 @@ function LoginForm() {
                         <Image src={logo} alt="MSS-Logo" width={100} height={100} />
                     </div>
 
-                    <h2 className="mt-6 text-3xl font-black text-sky-500 tracking-tight">
-                        MSS <span className="text-slate-900"> Admin</span>
+                    <h2 className="mt-6 text-3xl font-black text-sky-500 dark:text-sky-400 tracking-tight">
+                        MSS <span className="text-slate-900 dark:text-white"> Admin</span>
                     </h2>
 
-                    <p className="mt-2 text-sm text-slate-500">
+                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                         Sign in to access your dashboard
                     </p>
                 </div>
@@ -234,10 +235,11 @@ function LoginForm() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             disabled={isLocked || loading}
-                            className="w-full rounded-xl border border-sky-200 
-                        px-4 py-3 text-slate-900 placeholder-slate-400
+                            className="w-full rounded-xl border border-sky-200 dark:border-slate-800
+                        px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500
+                        dark:bg-slate-950
                         focus:border-sky-500 focus:ring-2 focus:ring-sky-400
-                        disabled:bg-slate-100 disabled:text-slate-400
+                        disabled:bg-slate-100 disabled:text-slate-400 dark:disabled:bg-slate-900 dark:disabled:text-slate-500
                         outline-none transition-all duration-300"
                         />
                         <div className="relative">
@@ -255,10 +257,11 @@ function LoginForm() {
                                     const value = e.target.value.slice(0, 15);
                                     setPassword(value);
                                 }}
-                                className="w-full rounded-xl border border-sky-200 
-                                    px-4 py-3 pr-15 text-slate-900 placeholder-slate-400
+                                className="w-full rounded-xl border border-sky-200 dark:border-slate-800
+                                    px-4 py-3 pr-15 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500
+                                    dark:bg-slate-950
                                     focus:border-sky-500 focus:ring-2 focus:ring-sky-400
-                                    disabled:bg-slate-100 disabled:text-slate-400
+                                    disabled:bg-slate-100 disabled:text-slate-400 dark:disabled:bg-slate-900 dark:disabled:text-slate-500
                                     outline-none transition-all duration-300"
                             />
 
@@ -266,7 +269,7 @@ function LoginForm() {
                                 type="button"
                                 disabled={isLocked || loading}
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="cursor-pointer absolute inset-y-0 right-3 flex items-center text-sky-500 hover:text-sky-600 transition disabled:opacity-50"
+                                className="cursor-pointer absolute inset-y-0 right-3 flex items-center text-sky-500 hover:text-sky-600 dark:text-sky-400 dark:hover:text-sky-300 transition disabled:opacity-50"
                             >
                                 {showPassword ? (
                                     <EyeOff className="h-5 w-5" />
@@ -278,7 +281,7 @@ function LoginForm() {
                     </div>
 
                     {error && (
-                        <div className={`text-sm text-center p-3 rounded-xl ${isLocked ? 'bg-orange-50 text-orange-600 font-bold' : 'bg-red-50 text-red-500'}`}>
+                        <div className={`text-sm text-center p-3 rounded-xl ${isLocked ? 'bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400 font-bold' : 'bg-red-50 text-red-500 dark:bg-red-950/30 dark:text-red-400'}`}>
                             {isLocked ? `ระงับการใช้งานชั่วคราว ${lockoutTimer} วินาที` : error}
                         </div>
                     )}
@@ -289,12 +292,12 @@ function LoginForm() {
                         className={`w-full rounded-xl 
                     cursor-pointer bg-gradient-to-r from-sky-500 to-sky-600
                     py-3 text-sm font-semibold text-white
-                    shadow-lg shadow-sky-200
+                    shadow-lg shadow-sky-200 dark:shadow-sky-900/30
                     hover:from-sky-600 hover:to-sky-700
                     hover:shadow-xl hover:scale-[1.02]
                     active:scale-95
                     transition-all duration-300
-                    focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2
+                    focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 dark:focus:ring-offset-slate-900
                     ${(loading || isLocked) ? "opacity-70 cursor-not-allowed grayscale" : ""}
                 `}
                     >
@@ -308,7 +311,7 @@ function LoginForm() {
 
 export default function LoginPage() {
     return (
-        <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div></div>}>
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div></div>}>
             <LoginForm />
         </Suspense>
     );
