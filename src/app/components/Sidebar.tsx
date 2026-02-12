@@ -1,6 +1,6 @@
 "use client";
 import {
-    LayoutDashboard, Settings, FileText, Users, Calendar,
+    LayoutDashboard, Settings, FileText, Users,
     X, LogOut, ChevronLeft, ChevronRight, ChevronDown
 } from "lucide-react";
 import Link from "next/link";
@@ -21,6 +21,7 @@ const menuItems = [
         ]
     },
     { icon: Users, label: "จัดการผู้ใช้", href: "/admin/users", roles: ['superadmin'] },
+    { icon: FileText, label: "จัดการบันทึก", href: "/admin/log", roles: ['superadmin'] },
 ];
 
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v: boolean) => void }) {

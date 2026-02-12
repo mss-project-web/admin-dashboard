@@ -8,5 +8,9 @@ export const systemApi = {
     getSystem: async () => {
         const response = await api.get('/');
         return response.data;
+    },
+    getSystemLogs: async () => {
+        const response = await api.get('/system-logs');
+        return response.data;
     }
 }
