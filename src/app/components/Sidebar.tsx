@@ -1,6 +1,6 @@
 "use client";
 import {
-    LayoutDashboard, Settings, FileText, Users,
+    LayoutDashboard, Settings, FileText, Users, Calendar,
     X, LogOut, ChevronLeft, ChevronRight, ChevronDown
 } from "lucide-react";
 import Link from "next/link";
@@ -16,7 +16,8 @@ const menuItems = [
         icon: Settings, label: "ตั้งค่าเว็บหลัก", href: "/admin",
         subItems: [
             { label: "จัดการกิจกรรม", href: "/admin/activity" },
-            { label: "จัดการห้องละหมาด", href: "/admin/prayer-room" },
+            { label: "จัดการห้องละหมาด", href: "/admin/prayer-rooms" },
+            { label: "จัดการข่าวสาร", href: "/admin/news" },
         ]
     },
     { icon: Users, label: "จัดการผู้ใช้", href: "/admin/users", roles: ['superadmin'] },
@@ -39,7 +40,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
     const handleLogout = async () => {
         try {
             await authApi.logout();
-            router.push("/auth/login");
+            router.push("/auth/login?logout=success");
         } catch (error) {
             console.error("Logout failed", error);
         }

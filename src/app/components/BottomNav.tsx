@@ -6,7 +6,8 @@ import {
     LayoutDashboard,
     History,
     User,
-    Menu
+    Menu,
+    Calendar // Import Calendar
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";

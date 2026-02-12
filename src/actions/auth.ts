@@ -3,7 +3,6 @@
 import { cookies } from "next/headers";
 import { User, UserRole } from "@/types/user";
 
-// Simple JWT parser for server-side use (Node.js environment)
 function parseJwtServer(token: string) {
     try {
         const parts = token.split('.');
@@ -23,14 +22,10 @@ function parseJwtServer(token: string) {
 export async function getSession(): Promise<User | null> {
     const cookieStore = await cookies();
     
-    // Scan for potential token cookies
-    // Note: HttpOnly cookies are accessible here!
     const tokenCookie = cookieStore.get("access_token") || cookieStore.get("token") || cookieStore.get("jwt");
     
     let token = tokenCookie?.value;
 
-    // If not found by name, scan all (less precise but catches 'random' names if used, 
-    // though cookies().getAll() is better)
     if (!token) {
         const allCookies = cookieStore.getAll();
         for (const c of allCookies) {
@@ -51,7 +46,7 @@ export async function getSession(): Promise<User | null> {
                  return {
                      _id: userId,
                      role: userRole,
-                     firstName: 'Admin', // Placeholder, real name comes from DB
+                     firstName: 'Admin',
                      lastName: '',
                      email: payload.email || '',
                      phoneNumber: ''

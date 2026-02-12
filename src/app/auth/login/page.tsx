@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { authApi } from "@/lib/api/auth";
 import { handleApiError } from "@/lib/axios/index";
+import { toastUtils } from "@/lib/toast";
 import Image from "next/image";
 import logo from "../../../../public/Image/LOGO-MSS.png";
 import { Eye, EyeOff } from "lucide-react";
@@ -109,6 +110,23 @@ export default function LoginPage() {
         startLockoutTimer(LOCK_DURATION);
     };
 
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        const errorParam = searchParams.get('error');
+        const logoutParam = searchParams.get('logout');
+
+        if (errorParam === 'session_expired') {
+            toastUtils.error("เซสชันหมดอายุ", "กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
+            router.replace('/auth/login');
+        }
+
+        if (logoutParam === 'success') {
+            toastUtils.success("ออกจากระบบสำเร็จ", "ไว้พบกันใหม่");
+            router.replace('/auth/login');
+        }
+    }, [searchParams, router]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
@@ -120,18 +138,20 @@ export default function LoginPage() {
 
         if (!cleanEmail || !cleanPassword) {
             setError("กรุณากรอกอีเมลและรหัสผ่าน");
+            toastUtils.warning("ข้อมูลไม่ครบถ้วน", "กรุณากรอกอีเมลและรหัสผ่าน");
             return;
         }
 
         if (!emailRegex.test(cleanEmail)) {
             setError("รูปแบบอีเมลไม่ถูกต้อง");
+            toastUtils.warning("ข้อมูลไม่ถูกต้อง", "รูปแบบอีเมลไม่ถูกต้อง");
             return;
         }
 
         setLoading(true);
 
         try {
-            const response = await authApi.login({ email: cleanEmail, password: cleanPassword });
+            await authApi.login({ email: cleanEmail, password: cleanPassword });
 
             // Note: We rely on the server to set the HTTP-Only cookie (or accessible cookie).
             // We no longer store token/user info in localStorage.
@@ -140,7 +160,10 @@ export default function LoginPage() {
             deleteSecCookie(ATTEMPTS_KEY);
             deleteSecCookie(LOCKOUT_KEY);
 
-            window.location.href = "/menu";
+            toastUtils.success("ยินดีต้อนรับ", "เข้าสู่ระบบสำเร็จ");
+
+            // Allow toast to show briefly or just push (Next.js toast usually persists across simple push if layout doesn't unmount toaster)
+            router.push("/menu");
 
         } catch (err: any) {
 
@@ -148,16 +171,22 @@ export default function LoginPage() {
             setFailedAttempts(newFailedAttempts);
             setSecCookie(ATTEMPTS_KEY, newFailedAttempts);
 
+            let errorMessage = "เกิดข้อผิดพลาดในการเข้าสู่ระบบ";
+
             if (newFailedAttempts >= 5) {
-                setError("คุณล็อกอินผิดพลาดเกินกำหนด กรุณารอสักครู่");
+                errorMessage = "คุณล็อกอินผิดพลาดเกินกำหนด กรุณารอสักครู่";
+                setError(errorMessage);
                 handleLockout();
+                toastUtils.error("ถูกระงับการใช้งาน", errorMessage);
             } else {
                 if (err.response && err.response.status === 401) {
-                    setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
+                    errorMessage = "อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง";
+                    setError(errorMessage);
                 } else {
-                    const message = handleApiError(err);
-                    setError(message);
+                    errorMessage = handleApiError(err);
+                    setError(errorMessage);
                 }
+                toastUtils.error("เข้าสู่ระบบไม่สำเร็จ", errorMessage);
             }
         } finally {
             setLoading(false);

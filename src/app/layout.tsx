@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Anuphan } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "@/app/components/ui/toaster";
 
 
 const anuphan = Anuphan({
@@ -25,6 +26,7 @@ export default function RootLayout({
         className={`${anuphan.variable} antialiased`}
       >
         {children}
+        <Toaster />
       </body>
     </html>
   );

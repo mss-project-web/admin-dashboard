@@ -29,9 +29,17 @@ api.interceptors.response.use(
 
                 return api(originalRequest);
             } catch (refreshError) {
+                // Try to logout to clear cookies if possible, to avoid middleware redirect loops
+                try {
+                    await api.post('/auth/logout');
+                } catch (e) {
+                    console.error("Logout failed during refresh error handling", e);
+                }
+
                 if (typeof window !== 'undefined') {
                     if (!window.location.pathname.includes('/auth/login')) {
-                        window.location.href = '/auth/login';
+                        // Force reload to hit middleware with cleared cookies (hopefully) or just redirect
+                        window.location.href = '/auth/login?error=session_expired';
                     }
                 }
                 return Promise.reject(refreshError);
