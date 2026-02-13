@@ -128,7 +128,7 @@ export default function MenuPage() {
                                 id: "02",
                                 icon: FileText,
                                 title: "จัดการบทความ",
-                                desc: "จัดการเนื้อหาบทความและหมวดหมู่",
+                                desc: "จัดการเนื้อหาบทความ",
                                 href: "/admin/blog/content",
                                 color: "group-hover:text-sky-500",
                                 iconBg: "group-hover:bg-sky-500",

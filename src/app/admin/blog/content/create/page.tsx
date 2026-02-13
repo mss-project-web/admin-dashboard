@@ -11,6 +11,7 @@ import Image from "next/image";
 import BlogBlockEditor from "../../components/BlogBlockEditor";
 import TagInput from "../../components/TagInput";
 import BlogPreview from "../../components/BlogPreview";
+import GroupSelector from "../../components/GroupSelector";
 import { Button } from "@/app/components/ui/button";
 
 export default function CreateBlogPage() {
@@ -97,6 +98,11 @@ export default function CreateBlogPage() {
         } finally {
             setIsUploading(false);
         }
+    };
+
+    const handleGroupCreated = (newGroup: BlogGroup) => {
+        setGroups(prev => [...prev, newGroup]);
+        setSelectedGroup(newGroup._id || newGroup.id || "");
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -261,17 +267,12 @@ export default function CreateBlogPage() {
                             {/* Category */}
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">หมวดหมู่ *</label>
-                                <select
+                                <GroupSelector
+                                    groups={groups}
                                     value={selectedGroup}
-                                    onChange={(e) => setSelectedGroup(e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 text-sm"
-                                    required
-                                >
-                                    <option value="">เลือกหมวดหมู่...</option>
-                                    {groups.map((g, i) => (
-                                        <option key={g._id || g.id || i} value={g._id || g.id}>{g.name}</option>
-                                    ))}
-                                </select>
+                                    onChange={setSelectedGroup}
+                                    onGroupCreated={handleGroupCreated}
+                                />
                             </div>
 
                             {/* Description */}

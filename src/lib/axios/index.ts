@@ -17,7 +17,7 @@ api.interceptors.response.use(
     },
     async (error) => {
         const originalRequest = error.config as ApiRequestConfig;
-        if (error.config?.url?.endsWith('/auth/login') || error.config?.url?.endsWith('/auth/logout')) {
+        if (error.config?.url?.endsWith('/auth/login') || error.config?.url?.endsWith('/auth/logout') || error.config?.url?.endsWith('/auth/refresh')) {
             return Promise.reject(error);
         }
 

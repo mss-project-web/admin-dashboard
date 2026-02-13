@@ -16,7 +16,6 @@ const menuItems = [
         icon: FileText, label: "จัดการบทความ", href: "/admin/blog",
         subItems: [
             { label: "เนื้อหาบทความ", href: "/admin/blog/content" },
-            { label: "หมวดหมู่", href: "/admin/blog/group" },
         ]
     },
     {
