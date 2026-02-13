@@ -1,7 +1,6 @@
 "use client";
 
 import { BlogContentBlock } from "@/types/blog";
-import Image from "next/image";
 import { X } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 
@@ -43,14 +42,11 @@ export default function BlogPreview({ blocks, onClose }: BlogPreviewProps) {
                             return (
                                 <figure key={index} className="flex flex-col items-center my-8">
                                     {data.url && (
-                                        <div className="relative w-full max-w-4xl aspect-[16/9] rounded-xl overflow-hidden shadow-md">
-                                            <Image
-                                                src={data.url}
-                                                alt={data.caption || "Blog Image"}
-                                                fill
-                                                className="object-cover"
-                                            />
-                                        </div>
+                                        <img
+                                            src={data.url}
+                                            alt={data.caption || "Blog Image"}
+                                            className="w-full h-auto rounded-xl shadow-md"
+                                        />
                                     )}
                                     {data.caption && (
                                         <figcaption className="mt-3 text-sm text-center text-slate-500 italic">

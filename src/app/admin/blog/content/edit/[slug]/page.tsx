@@ -5,7 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import { blogService } from "@/services/blogService";
 import { BlogGroup, BlogContentBlock } from "@/types/blog";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronLeft, Save, Loader2, Image as ImageIcon, Trash2, Eye } from "lucide-react";
+import { ChevronLeft, Save, Loader2, Image as ImageIcon, Trash2, Eye, Languages } from "lucide-react";
+import { generateSlugFromThai } from "@/lib/translateSlug";
 import Link from "next/link";
 import Image from "next/image";
 import BlogBlockEditor from "../../../components/BlogBlockEditor";
@@ -33,6 +34,7 @@ export default function EditBlogPage() {
     const [coverImage, setCoverImage] = useState("");
     const [content, setContent] = useState<BlogContentBlock[]>([{ type: 'paragraph', data: '' }]);
     const [isUploading, setIsUploading] = useState(false);
+    const [translating, setTranslating] = useState(false);
 
     useEffect(() => {
         const loadData = async () => {
@@ -100,7 +102,19 @@ export default function EditBlogPage() {
         }
     };
 
-
+    const handleGenerateSlug = async () => {
+        if (!title.trim()) return;
+        setTranslating(true);
+        try {
+            const generatedSlug = await generateSlugFromThai(title);
+            setSlug(generatedSlug);
+            toast({ title: "สำเร็จ", description: "สร้าง slug จากการแปลหัวข้อเรียบร้อย", variant: "default" });
+        } catch (error: any) {
+            toast({ title: "ผิดพลาด", description: error.message || "ไม่สามารถแปลหัวข้อได้", variant: "destructive" });
+        } finally {
+            setTranslating(false);
+        }
+    };
 
     const handleGroupCreated = (newGroup: BlogGroup) => {
         setGroups(prev => [...prev, newGroup]);
@@ -220,10 +234,25 @@ export default function EditBlogPage() {
 
                         {/* Slug Field */}
                         <div className="bg-white dark:bg-slate-950 p-4 md:p-6 rounded-xl md:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                                Slug (URL) *
-                                <span className="ml-2 text-xs font-normal text-slate-400">ระวัง! การเปลี่ยน slug จะทำให้ URL เก่าไม่สามารถเข้าถึงได้</span>
-                            </label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
+                                    Slug (URL) *
+                                    <span className="ml-2 text-xs font-normal text-slate-400">ระวัง! การเปลี่ยน slug จะทำให้ URL เก่าไม่สามารถเข้าถึงได้</span>
+                                </label>
+                                {/[\u0E00-\u0E7F]/.test(title) && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleGenerateSlug}
+                                        disabled={translating || !title.trim()}
+                                        className="gap-1.5 text-xs h-7 px-2.5 border-sky-200 text-sky-600 hover:bg-sky-50 dark:border-sky-800 dark:text-sky-400 dark:hover:bg-sky-950 flex-shrink-0"
+                                    >
+                                        {translating ? <Loader2 className="animate-spin" size={14} /> : <Languages size={14} />}
+                                        แปลเป็น Slug
+                                    </Button>
+                                )}
+                            </div>
                             <input
                                 type="text"
                                 value={slug}
