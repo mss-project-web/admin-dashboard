@@ -1,5 +1,6 @@
 import api from "@/lib/axios";
 import { News } from "@/types/news";
+import { createFormDataForUpdate } from '@/lib/api-utils';
 
 export const newsService = {
     getAll: async () => {
@@ -21,8 +22,13 @@ export const newsService = {
         return response.data;
     },
 
-    update: async (id: string, data: any) => {
-        const response = await api.patch(`/news/${id}`, data);
+    update: async (id: string, data: any, newImages?: File[], deletedImageUrls?: string[]) => {
+        const formData = createFormDataForUpdate(data, newImages, deletedImageUrls);
+        const response = await api.patch(`/news/${id}`, formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
         return response.data;
     },
 

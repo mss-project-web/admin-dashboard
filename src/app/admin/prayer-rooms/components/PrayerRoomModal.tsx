@@ -113,15 +113,18 @@ export default function PrayerRoomModal({ isOpen, onClose, onSuccess, prayerRoom
             const location: [number, number] = [isNaN(lat) ? 0 : lat, isNaN(lng) ? 0 : lng];
 
             if (isEditMode && prayerRoomToEdit) {
-                // Update: Use JSON Body
-                const jsonPayload = {
+                // Update: Use FormData via Service
+                const existingUrls = formData.images.filter(img => typeof img === 'string') as string[];
+                const newImages = formData.images.filter(img => img instanceof File) as File[];
+                const deletedImageUrls = prayerRoomToEdit.images?.filter(url => !existingUrls.includes(url)) || [];
+
+                const payload = {
                     name: formData.name,
                     place: formData.place,
                     detail: formData.detail,
                     faculty: formData.faculty,
                     location: location,
                     openingHours: formData.openingHours,
-                    images: formData.images.filter(img => typeof img === 'string'), // Only existing URLs
                     youtube_url: formData.youtube_url,
                     capacity: formData.capacity,
                     google_map_url: formData.google_map_url,
@@ -129,7 +132,7 @@ export default function PrayerRoomModal({ isOpen, onClose, onSuccess, prayerRoom
                     phone: formData.phone
                 };
 
-                await prayerRoomService.update(prayerRoomToEdit._id, jsonPayload);
+                await prayerRoomService.update(prayerRoomToEdit._id, payload, newImages, deletedImageUrls);
                 toastUtils.success("สำเร็จ", "แก้ไขข้อมูลห้องละหมาดเรียบร้อยแล้ว");
 
             } else {

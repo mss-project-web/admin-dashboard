@@ -2,6 +2,8 @@ import api from '@/lib/axios';
 
 import { Activity, ActivityListItem, ActivityResponse } from '@/types/activity';
 
+import { createFormDataForUpdate } from '@/lib/api-utils';
+
 export const activityService = {
     getAll: async () => {
         const response = await api.get<{ status: string, data: { status: string, data: ActivityListItem[] } }>('/activities/');
@@ -20,9 +22,10 @@ export const activityService = {
         return response.data.data;
     },
 
-    update: async (id: string, data: any) => {
-        const response = await api.patch<ActivityResponse<Activity>>(`/activities/${id}`, data, {
-            headers: { 'Content-Type': 'application/json' }
+    update: async (id: string, data: any, newImages?: File[], deletedImageUrls?: string[]) => {
+        const formData = createFormDataForUpdate(data, newImages, deletedImageUrls);
+        const response = await api.patch<ActivityResponse<Activity>>(`/activities/${id}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
         });
         return response.data;
     },

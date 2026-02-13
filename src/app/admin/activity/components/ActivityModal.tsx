@@ -20,6 +20,7 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
     const isEditMode = !!activityToEdit;
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingDetail, setIsFetchingDetail] = useState(false);
+    const [originalImages, setOriginalImages] = useState<string[]>([]); // To track initial images for deletion logic
 
     // Form States - Using a local type allowing mixed image types
     const [formData, setFormData] = useState<{
@@ -58,6 +59,8 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                 setIsFetchingDetail(true);
                 activityService.getById(activityToEdit._id)
                     .then((data) => {
+                        const loadedImages = data.images || [];
+                        setOriginalImages(loadedImages);
                         setFormData({
                             name_th: data.name_th,
                             name_eng: data.name_eng,
@@ -67,7 +70,7 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                             duration: data.duration || 0,
                             start_date: data.start_date ? new Date(data.start_date).toISOString().slice(0, 16) : "",
                             end_date: data.end_date ? new Date(data.end_date).toISOString().slice(0, 16) : "",
-                            images: data.images || [],
+                            images: loadedImages,
                             objectives: data.objectives?.length ? data.objectives : [""],
                             goals: data.goals?.length ? data.goals : [""],
                             favorite: data.favorite
@@ -80,6 +83,7 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                     .finally(() => setIsFetchingDetail(false));
             } else {
                 // Reset for create
+                setOriginalImages([]);
                 setFormData({
                     name_th: "",
                     name_eng: "",
@@ -120,9 +124,12 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
             }
 
             if (isEditMode && activityToEdit) {
-                // Update: Use JSON Body (PATCH)
-                // Note: File uploads might not be supported in this JSON PATCH unless backend supports base64 or separate endpoint
-                const jsonPayload = {
+                // Update: Use FormData via Service (PATCH)
+                const existingUrls = formData.images.filter(img => typeof img === 'string') as string[];
+                const newImages = formData.images.filter(img => img instanceof File) as File[];
+                const deletedImageUrls = originalImages.filter(url => !existingUrls.includes(url)) || [];
+
+                const payload = {
                     name_th: formData.name_th,
                     name_eng: formData.name_eng,
                     location: formData.location,
@@ -133,12 +140,10 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                     end_date: formData.end_date,
                     favorite: formData.favorite,
                     objectives: formData.objectives.filter(item => item.trim() !== ""),
-                    goals: formData.goals.filter(item => item.trim() !== ""),
-                    // Only send existing URL strings. New Files cannot be sent via JSON PATCH directly.
-                    images: formData.images.filter(img => typeof img === 'string')
+                    goals: formData.goals.filter(item => item.trim() !== "")
                 };
 
-                await activityService.update(activityToEdit._id, jsonPayload);
+                await activityService.update(activityToEdit._id, payload, newImages, deletedImageUrls);
 
                 toastUtils.success("สำเร็จ", "แก้ไขข้อมูลกิจกรรมเรียบร้อยแล้ว");
 

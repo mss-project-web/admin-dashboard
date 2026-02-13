@@ -75,16 +75,19 @@ export default function NewsModal({ isOpen, onClose, onSuccess, newsToEdit }: Ne
             }
 
             if (isEditMode && newsToEdit) {
-                // Update: Use JSON Body (PATCH)
-                const jsonPayload = {
+                // Update: Use FormData via Service (PATCH)
+                const existingUrls = formData.images.filter(img => typeof img === 'string') as string[];
+                const newImages = formData.images.filter(img => img instanceof File) as File[];
+                const deletedImageUrls = newsToEdit.images?.filter(url => !existingUrls.includes(url)) || [];
+
+                const payload = {
                     name: formData.name,
                     description: formData.description,
                     date: formData.date,
-                    link: formData.link,
-                    images: formData.images.filter(img => typeof img === 'string') // Only keep existing URLs
+                    link: formData.link
                 };
 
-                await newsService.update(newsToEdit._id, jsonPayload);
+                await newsService.update(newsToEdit._id, payload, newImages, deletedImageUrls);
                 toastUtils.success("สำเร็จ", "แก้ไขข่าวสารเรียบร้อยแล้ว");
 
             } else {
