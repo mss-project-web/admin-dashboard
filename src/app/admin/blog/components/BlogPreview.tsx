@@ -27,6 +27,15 @@ export default function BlogPreview({ blocks, onClose }: BlogPreviewProps) {
 
 
                 {/* Blocks Content */}
+                <style>{`
+                    .blog-content p:empty,
+                    .blog-content p:has(> br:only-child) {
+                        min-height: 1em;
+                    }
+                    .blog-content p {
+                        margin-bottom: 0.25em;
+                    }
+                `}</style>
                 <div className="prose prose-lg dark:prose-invert max-w-none space-y-6">
                     {blocks.map((block, index) => {
                         if (block.type === 'paragraph') {
@@ -34,7 +43,7 @@ export default function BlogPreview({ blocks, onClose }: BlogPreviewProps) {
                                 <div
                                     key={index}
                                     dangerouslySetInnerHTML={{ __html: block.data as string }}
-                                    className="leading-relaxed text-slate-700 dark:text-slate-300"
+                                    className="blog-content leading-relaxed text-slate-700 dark:text-slate-300"
                                 />
                             );
                         } else if (block.type === 'image') {
