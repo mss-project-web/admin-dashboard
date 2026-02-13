@@ -35,6 +35,7 @@ export default function EditBlogPage() {
     const [content, setContent] = useState<BlogContentBlock[]>([{ type: 'paragraph', data: '' }]);
     const [isUploading, setIsUploading] = useState(false);
     const [translating, setTranslating] = useState(false);
+    const [views, setViews] = useState(0);
 
     useEffect(() => {
         const loadData = async () => {
@@ -66,6 +67,7 @@ export default function EditBlogPage() {
 
                     setTags(blogData.tags || []);
                     setCoverImage(blogData.coverImage || "");
+                    setViews(blogData.views || 0);
 
                     if (Array.isArray(blogData.content)) {
                         setContent(blogData.content);
@@ -311,6 +313,14 @@ export default function EditBlogPage() {
                         </div>
 
                         <div className="bg-white dark:bg-slate-950 p-4 md:p-5 rounded-xl md:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                            {/* Views */}
+                            <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                    <Eye size={16} className="text-sky-500" />
+                                    <span className="font-medium">ยอดเข้าชม</span>
+                                </div>
+                                <span className="text-lg font-bold text-sky-600 dark:text-sky-400 font-mono">{views.toLocaleString()}</span>
+                            </div>
                             {/* Category */}
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">หมวดหมู่ *</label>
