@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/app/components/Sidebar";
 import BottomNav from "@/app/components/BottomNav";
-import { Menu, Bell, LogOut, User as UserIcon } from "lucide-react";
+import { Menu, LogOut, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { authApi } from "@/lib/api/auth";
 
@@ -53,9 +53,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <button className="p-2 text-slate-400 hover:text-sky-500 transition-colors">
-                            <Bell size={20} />
-                        </button>
                         <div className="text-right hidden sm:block">
                             <div className="text-xs font-bold text-slate-700 dark:text-slate-200">{user?.email}</div>
                             <div className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">{user?.role}</div>

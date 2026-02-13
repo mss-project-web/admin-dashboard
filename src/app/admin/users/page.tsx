@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from "react";
 import {
     Plus, Search, Edit2, Trash2,
     ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-    ArrowUpDown, Mail, Phone, Download
+    ArrowUpDown, Mail, Phone
 } from "lucide-react";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { useUsers } from "@/hooks/useUsers";
@@ -129,12 +129,6 @@ export default function UsersPage() {
                     </h2>
                 </div>
                 <div className="flex gap-2">
-                    <button className="cursor-pointer flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-all">
-                        <Download size={14} />
-                        <span className="inline sm:hidden">Export</span>
-                        <span className="hidden sm:inline">Export</span>
-                    </button>
-
                     <button
                         onClick={handleAddClick}
                         className="cursor-pointer flex items-center gap-1.5 bg-sky-500 hover:bg-sky-600 text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold shadow-md transition-all active:scale-95"
