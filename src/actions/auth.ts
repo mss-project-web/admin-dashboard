@@ -19,6 +19,8 @@ function parseJwtServer(token: string) {
     }
 }
 
+//test
+
 export async function getSession(): Promise<User | null> {
     const cookieStore = await cookies();
     
