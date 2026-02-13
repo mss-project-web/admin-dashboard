@@ -32,11 +32,11 @@ export const blogService = {
     uploadImage: async (file: File) => {
         const formData = new FormData();
         formData.append('file', file);
-        const response = await api.post<{ 
-            status: string; 
-            data: { url: string }; 
-            message: string; 
-            status_code: number 
+        const response = await api.post<{
+            status: string;
+            data: { url: string };
+            message: string;
+            status_code: number
         }>('/blog/upload', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
@@ -46,7 +46,7 @@ export const blogService = {
     getGroups: async () => {
         const response = await api.get<any>('/blog/groups');
         let data: any[] = [];
-        
+
         if (Array.isArray(response.data)) {
             data = response.data;
         } else if (response.data?.data && Array.isArray(response.data.data)) {
@@ -60,18 +60,18 @@ export const blogService = {
             return item;
         });
     },
-    
+
     createGroup: async (name: string) => {
-         const response = await api.post<BlogGroup>('/blog/groups', { name });
-         return (response.data as any)?.data || response.data;
+        const response = await api.post<BlogGroup>('/blog/groups', { name });
+        return (response.data as any)?.data || response.data;
     },
-    
+
     updateGroup: async (id: string, name: string) => {
-         const response = await api.put<BlogGroup>(`/blog/groups/${id}`, { name });
-         return (response.data as any)?.data || response.data;
+        const response = await api.put<BlogGroup>(`/blog/groups/${id}`, { name });
+        return (response.data as any)?.data || response.data;
     },
 
     deleteGroup: async (id: string) => {
-         await api.delete(`/blog/groups/${id}`);
+        await api.delete(`/blog/groups/${id}`);
     }
 };
