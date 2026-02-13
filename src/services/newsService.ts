@@ -22,7 +22,6 @@ export const newsService = {
     },
 
     update: async (id: string, data: any) => {
-        // Update uses PATCH as per requirements: "PATCH เฉพาะข้อมูลได้ (Body JSON/raw)"
         const response = await api.patch(`/news/${id}`, data);
         return response.data;
     },

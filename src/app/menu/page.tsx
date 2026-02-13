@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link";
-import { LayoutDashboard, Settings, Clock, Box, LogOut } from "lucide-react";
+import { LayoutDashboard, FileText, Settings, Clock, Box, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api/auth";
 import { systemApi } from "@/lib/api/system";
@@ -126,30 +126,39 @@ export default function MenuPage() {
                             },
                             {
                                 id: "02",
-                                icon: Settings,
-                                title: "การตั้งค่าระบบ",
-                                desc: "กำหนดสิทธิ์ผู้ใช้งานและปรับแต่งการทำงานของระบบ",
-                                href: "/admin/settings",
+                                icon: FileText,
+                                title: "จัดการบทความ",
+                                desc: "จัดการเนื้อหาบทความและหมวดหมู่",
+                                href: "/admin/blog",
                                 color: "group-hover:text-sky-500",
                                 iconBg: "group-hover:bg-sky-500",
                             },
                             {
                                 id: "03",
-                                icon: Clock,
-                                title: "ตารางเวลาละหมาด",
-                                desc: "แสดงข้อมูลเวลาละหมาดประจำวันอย่างถูกต้องและเป็นปัจจุบัน",
-                                href: "https://prayertime.msspsuhatyai.org",
-                                color: "group-hover:text-blue-500",
+                                icon: Settings,
+                                title: "จัดการเว็บหลัก",
+                                desc: "จัดการกิจกิจกรรม ห้องละหมาด และข่าวสาร",
+                                href: "/admin/activity",
+                                color: "group-hover:bg-blue-500",
                                 iconBg: "group-hover:bg-blue-500",
                             },
                             {
                                 id: "04",
+                                icon: Clock,
+                                title: "ตารางเวลาละหมาด",
+                                desc: "แสดงข้อมูลเวลาละหมาดประจำวันอย่างถูกต้องและเป็นปัจจุบัน",
+                                href: "https://prayertime.msspsuhatyai.org",
+                                color: "group-hover:text-sky-500",
+                                iconBg: "group-hover:bg-sky-500",
+                            },
+                            {
+                                id: "05",
                                 icon: Box,
                                 title: "ระบบบริหารสต๊อก",
                                 desc: "ตรวจสอบข้อมูลและสถานะคงเหลือของสิ่งของในคลัง",
                                 href: "https://stock.msspsuhatyai.org",
-                                color: "group-hover:text-sky-500",
-                                iconBg: "group-hover:bg-sky-500",
+                                color: "group-hover:text-blue-500",
+                                iconBg: "group-hover:bg-blue-500",
                             },
                         ].map((item, index) => (
                             <Link href={item.href} key={index} className="group">

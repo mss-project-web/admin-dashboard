@@ -13,6 +13,13 @@ import { authApi } from "@/lib/api/auth";
 const menuItems = [
     { icon: LayoutDashboard, label: "ภาพรวม", href: "/admin" },
     {
+        icon: FileText, label: "จัดการบทความ", href: "/admin/blog",
+        subItems: [
+            { label: "เนื้อหาบทความ", href: "/admin/blog/content" },
+            { label: "หมวดหมู่", href: "/admin/blog/group" },
+        ]
+    },
+    {
         icon: Settings, label: "ตั้งค่าเว็บหลัก", href: "/admin",
         subItems: [
             { label: "จัดการกิจกรรม", href: "/admin/activity" },

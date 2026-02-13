@@ -13,7 +13,6 @@ export const prayerRoomService = {
     },
 
     create: async (data: FormData) => {
-        // Create uses FormData for file uploads
         const response = await api.post("/prayer-rooms/", data, {
             headers: {
                 "Content-Type": "multipart/form-data",
@@ -23,7 +22,6 @@ export const prayerRoomService = {
     },
 
     update: async (id: string, data: any) => {
-        // Update uses JSON as per requirements
         const response = await api.put(`/prayer-rooms/${id}`, data);
         return response.data;
     },
