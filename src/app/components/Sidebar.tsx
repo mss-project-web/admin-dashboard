@@ -111,7 +111,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
                 <div className={`flex-none flex items-center h-16 px-4 border-b border-sky-50 dark:border-slate-800 ${isCollapsed && !isOpen ? "lg:justify-center" : "justify-between"}`}>
                     {(!isCollapsed || isOpen) && (
                         <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-lg bg-sky-500 flex items-center justify-center text-white font-bold">S</div>
+                            <img src="/favicon.ico" alt="MSS Logo" className="h-8 w-8 rounded-lg" />
                             <span className="text-xl font-bold text-sky-600">MSS - Admin</span>
                         </div>
                     )}
