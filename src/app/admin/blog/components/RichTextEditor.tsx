@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 // Image extension removed
@@ -22,6 +23,9 @@ interface RichTextEditorProps {
 }
 
 export default function RichTextEditor({ content = "", onChange, placeholder = "เริ่มเขียนบทความของคุณ..." }: RichTextEditorProps) {
+    const [showLinkDialog, setShowLinkDialog] = useState(false);
+    const [linkUrl, setLinkUrl] = useState('');
+    const linkInputRef = useRef<HTMLInputElement>(null);
 
     const editor = useEditor({
         immediatelyRender: false,
@@ -60,11 +64,36 @@ export default function RichTextEditor({ content = "", onChange, placeholder = "
     // Image upload functions removed
 
     const handleAddLink = () => {
-        const url = window.prompt('ใส่ URL:');
-        if (url) {
+        const existingHref = editor?.getAttributes('link').href || '';
+        setLinkUrl(existingHref);
+        setShowLinkDialog(true);
+    };
+
+    const confirmLink = () => {
+        if (linkUrl) {
+            const url = linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`;
             editor?.chain().focus().setLink({ href: url }).run();
         }
+        setShowLinkDialog(false);
+        setLinkUrl('');
     };
+
+    const removeLink = () => {
+        editor?.chain().focus().unsetLink().run();
+        setShowLinkDialog(false);
+        setLinkUrl('');
+    };
+
+    const cancelLink = () => {
+        setShowLinkDialog(false);
+        setLinkUrl('');
+    };
+
+    useEffect(() => {
+        if (showLinkDialog && linkInputRef.current) {
+            linkInputRef.current.focus();
+        }
+    }, [showLinkDialog]);
 
     if (!editor) {
         return <div className="flex items-center justify-center h-96"><Loader2 className="animate-spin text-sky-500" size={32} /></div>;
@@ -225,6 +254,49 @@ export default function RichTextEditor({ content = "", onChange, placeholder = "
                     <Redo size={16} />
                 </button>
             </div>
+
+            {/* Link Dialog */}
+            {showLinkDialog && (
+                <div className="border-b border-slate-200 dark:border-slate-700 px-4 py-3 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-sm">
+                    <div className="flex items-center gap-2 max-w-lg">
+                        <input
+                            ref={linkInputRef}
+                            type="url"
+                            value={linkUrl}
+                            onChange={(e) => setLinkUrl(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') confirmLink();
+                                if (e.key === 'Escape') cancelLink();
+                            }}
+                            placeholder="https://example.com"
+                            className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
+                        />
+                        <button
+                            type="button"
+                            onClick={confirmLink}
+                            className="px-3 py-1.5 text-sm font-medium bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors"
+                        >
+                            เพิ่มลิงก์
+                        </button>
+                        {editor?.isActive('link') && (
+                            <button
+                                type="button"
+                                onClick={removeLink}
+                                className="px-3 py-1.5 text-sm font-medium bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-colors"
+                            >
+                                ลบลิงก์
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={cancelLink}
+                            className="px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                        >
+                            ยกเลิก
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <EditorContent editor={editor} />
         </div>
