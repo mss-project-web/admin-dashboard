@@ -96,6 +96,66 @@ export default function BlogContentPage() {
         setSortConfig({ key, direction });
     };
 
+    const handleExport = () => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+
+        const htmlContent = `
+            <html>
+                <head>
+                    <title>Blog List Export</title>
+                    <style>
+                        body { font-family: 'Sarabun', sans-serif; color: black; background: white; padding: 20px; }
+                        table { width: 100%; border-collapse: collapse; border: 1px solid #000; }
+                        th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 12px; vertical-align: top; }
+                        th { background-color: #f0f0f0; font-weight: bold; text-align: center; }
+                        h1 { text-align: center; margin-bottom: 20px; font-size: 18px; }
+                        .text-center { text-align: center; }
+                        .text-right { text-align: right; }
+                        @media print {
+                            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>รายการบทความทั้งหมด (${processedBlogs.length} รายการ)</h1>
+                    <span>ข้อมูล ณ วันที่: ${new Date().toLocaleDateString('th-TH', { dateStyle: 'long', timeStyle: 'medium' })}</span>
+                    <br/><br/>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">ลำดับ</th>
+                                <th>หัวข้อบทความ</th>
+                                <th>Slug</th>
+                                <th>หมวดหมู่</th>
+                                <th style="width: 80px;">เข้าชม</th>
+                                <th style="width: 120px;">วันที่สร้าง</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${processedBlogs.map((blog, index) => `
+                                <tr>
+                                    <td class="text-center">${index + 1}</td>
+                                    <td>${blog.title}</td>
+                                    <td>${blog.slug || '-'}</td>
+                                    <td>${typeof blog.group === 'string' ? blog.group : blog.group?.name || '-'}</td>
+                                    <td class="text-center">${blog.views || 0}</td>
+                                    <td class="text-center">${blog.createdAt ? new Date(blog.createdAt).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <script>
+                        window.onload = function() { window.print(); }
+                    </script>
+                </body>
+            </html>
+        `;
+
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+    };
+
     return (
         <div className="w-full space-y-4 pb-32">
             {/* Headers */}
@@ -107,7 +167,10 @@ export default function BlogContentPage() {
                     </h2>
                 </div>
                 <div className="flex gap-2">
-                    <button className="cursor-pointer flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-all">
+                    <button
+                        onClick={handleExport}
+                        className="cursor-pointer flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-all text-slate-700"
+                    >
                         <Download size={14} />
                         <span className="inline">Export</span>
                     </button>
