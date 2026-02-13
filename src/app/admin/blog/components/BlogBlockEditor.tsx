@@ -130,6 +130,7 @@ export default function BlogBlockEditor({ blocks, onChange }: BlogBlockEditorPro
                                                     alt="Block Image"
                                                     fill
                                                     className="object-cover"
+                                                    unoptimized
                                                 />
                                                 <button
                                                     type="button"

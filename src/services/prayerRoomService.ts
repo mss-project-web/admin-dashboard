@@ -29,5 +29,5 @@ export const prayerRoomService = {
     delete: async (id: string) => {
         const response = await api.delete(`/prayer-rooms/${id}`);
         return response.data;
-    },
+    }
 };

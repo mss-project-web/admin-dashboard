@@ -214,7 +214,7 @@ export default function EditBlogPage() {
                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">รูปปก (Cover Image)</label>
                         {coverImage ? (
                             <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 group">
-                                <Image src={coverImage} alt="Cover" fill className="object-cover" />
+                                <Image src={coverImage} alt="Cover" fill className="object-cover" unoptimized />
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                     <Button
                                         type="button"

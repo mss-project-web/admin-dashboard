@@ -155,13 +155,12 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                 payload.append('end_date', formData.end_date);
                 payload.append('favorite', formData.favorite.toString());
 
-                // Append Arrays
-                formData.objectives.forEach((item) => {
-                    if (item.trim()) payload.append('objectives', item);
-                });
-                formData.goals.forEach((item) => {
-                    if (item.trim()) payload.append('goals', item);
-                });
+                // Append Arrays as JSON strings
+                const filteredObjectives = formData.objectives.filter(item => item.trim() !== "");
+                const filteredGoals = formData.goals.filter(item => item.trim() !== "");
+
+                payload.append('objectives', JSON.stringify(filteredObjectives));
+                payload.append('goals', JSON.stringify(filteredGoals));
 
                 // Append Images
                 formData.images.forEach((img) => {

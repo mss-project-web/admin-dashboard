@@ -87,6 +87,7 @@ export default function BlogTable({ blogs, isLoading, onDelete }: BlogTableProps
                                                 fill
                                                 className="object-cover"
                                                 sizes="64px"
+                                                unoptimized
                                             />
                                         ) : (
                                             <div className="flex items-center justify-center h-full text-slate-300">
