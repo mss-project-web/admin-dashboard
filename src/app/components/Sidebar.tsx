@@ -21,7 +21,7 @@ const menuItems = [
         ]
     },
     { icon: Users, label: "จัดการผู้ใช้", href: "/admin/users", roles: ['superadmin'] },
-    { icon: FileText, label: "จัดการบันทึก", href: "/admin/log", roles: ['superadmin'] },
+    { icon: FileText, label: "System Logs", href: "/admin/log", roles: ['superadmin'] },
 ];
 
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v: boolean) => void }) {

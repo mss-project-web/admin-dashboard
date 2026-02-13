@@ -5,6 +5,8 @@ import { LogsTable } from "@/app/components/LogsTable";
 import { toastUtils } from "@/lib/toast";
 import { RotateCw, ShieldAlert } from "lucide-react";
 
+import { Skeleton } from "@/app/components/ui/skeleton";
+
 export default function SystemLogsPage() {
     const [loading, setLoading] = useState(true);
     const [logs, setLogs] = useState<any[]>([]);
@@ -32,6 +34,54 @@ export default function SystemLogsPage() {
         fetchLogs();
     }, []);
 
+    if (loading) {
+        return (
+            <div className="space-y-6">
+                {/* Header & Controls Skeleton */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-48" />
+                        <Skeleton className="h-4 w-96 max-w-full" />
+                    </div>
+                    <Skeleton className="h-10 w-28 rounded-xl" />
+                </div>
+
+                {/* Filter Bar Skeleton */}
+                <div className="flex flex-col xl:flex-row gap-4 justify-between items-center bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <Skeleton className="h-12 w-full xl:w-96 rounded-2xl" />
+                    <div className="flex gap-3 w-full xl:w-auto">
+                        <Skeleton className="h-10 w-full sm:w-40 rounded-2xl" />
+                    </div>
+                </div>
+
+                {/* Table Skeleton */}
+                <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-4 border-b border-slate-100 dark:border-slate-800">
+                        <div className="flex justify-between items-center px-4">
+                            {[...Array(5)].map((_, i) => (
+                                <Skeleton key={i} className="h-4 w-24" />
+                            ))}
+                        </div>
+                    </div>
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {[...Array(8)].map((_, i) => (
+                            <div key={i} className="p-4 flex justify-between items-center px-8">
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-32" />
+                                    <Skeleton className="h-3 w-20" />
+                                </div>
+                                <Skeleton className="h-4 w-32 hidden md:block" />
+                                <Skeleton className="h-6 w-16 rounded-full" />
+                                <Skeleton className="h-6 w-24 rounded-lg hidden md:block" />
+                                <Skeleton className="h-8 w-8 rounded-lg" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -54,10 +104,13 @@ export default function SystemLogsPage() {
                 </button>
             </div>
 
-            {loading && logs.length === 0 ? (
+            {logs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-slate-950 rounded-[2rem] border border-slate-100 dark:border-slate-800">
-                    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-sky-500 mb-4"></div>
-                    <p className="text-slate-400">Loading system records...</p>
+                    <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-full mb-4">
+                        <ShieldAlert className="text-slate-300 dark:text-slate-600" size={32} />
+                    </div>
+                    <p className="text-slate-500 font-medium">No logs found</p>
+                    <p className="text-slate-400 text-sm mt-1">System events will appear here</p>
                 </div>
             ) : (
                 <div className="p-1 rounded-[2rem]">

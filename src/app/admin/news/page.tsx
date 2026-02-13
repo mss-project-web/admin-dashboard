@@ -5,8 +5,7 @@ import { Plus, Search, Edit2, Trash2, Calendar, Link as LinkIcon, Loader2, Chevr
 import { newsService } from "@/services/newsService";
 import { News } from "@/types/news";
 import Image from "next/image";
-import Link from "next/link";
-import { Button } from "@/app/components/ui/button";
+import { Skeleton } from "@/app/components/ui/skeleton";
 
 import NewsModal from "./components/NewsModal";
 import DeleteNewsModal from "./components/DeleteNewsModal";
@@ -172,7 +171,7 @@ export default function NewsPage() {
                 <div>
                     <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                         <div className="w-1.5 h-6 bg-sky-500 rounded-full" />
-                        จัดการห้องละหมาด
+                        จัดการข่าวสาร
                     </h2>
                 </div>
                 <div className="flex gap-2">
@@ -285,9 +284,24 @@ export default function NewsPage() {
 
             {/* News Grid */}
             {loading ? (
-                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                    <Loader2 size={40} className="animate-spin mb-4 text-sky-500" />
-                    <p>กำลังโหลดข่าวสาร...</p>
+                <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} className="bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
+                            <Skeleton className="aspect-[4/3] w-full" />
+                            <div className="p-3 space-y-2">
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-3 w-full" />
+                                <Skeleton className="h-3 w-1/2" />
+                                <div className="pt-2 mt-2 border-t border-slate-100 dark:border-slate-800 flex justify-between">
+                                    <Skeleton className="h-4 w-10" />
+                                    <div className="flex gap-1">
+                                        <Skeleton className="h-6 w-6 rounded" />
+                                        <Skeleton className="h-6 w-6 rounded" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             ) : filteredNews.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-slate-400 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">

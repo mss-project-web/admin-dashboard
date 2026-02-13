@@ -10,6 +10,7 @@ import { activityService } from "@/services/activityService";
 import { ActivityListItem } from "@/types/activity";
 import Link from "next/link";
 import Image from "next/image";
+import { Skeleton } from "@/app/components/ui/skeleton";
 
 import ActivityModal from "./components/ActivityModal";
 import DeleteActivityModal from "./components/DeleteActivityModal";
@@ -194,11 +195,19 @@ export default function ActivityPage() {
                         </thead>
                         <tbody className="text-[13px] divide-y divide-slate-100 dark:divide-slate-800">
                             {loading ? (
-                                <tr>
-                                    <td colSpan={6} className="text-center py-10 text-slate-400">
-                                        <Loader2 className="animate-spin inline mr-2" /> กำลังโหลดข้อมูล...
-                                    </td>
-                                </tr>
+                                [...Array(5)].map((_, i) => (
+                                    <tr key={i} className="bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
+                                        <td className="px-6 py-4"><Skeleton className="h-10 w-16 rounded-md" /></td>
+                                        <td className="px-6 py-4">
+                                            <Skeleton className="h-4 w-3/4 mb-1" />
+                                            <Skeleton className="h-3 w-1/2" />
+                                        </td>
+                                        <td className="px-6 py-4"><Skeleton className="h-4 w-full" /></td>
+                                        <td className="px-6 py-4"><div className="flex gap-1"><Skeleton className="h-4 w-4" /><Skeleton className="h-4 w-24" /></div></td>
+                                        <td className="px-6 py-4 text-center"><Skeleton className="h-6 w-6 rounded-full mx-auto" /></td>
+                                        <td className="px-6 py-4 text-right"><div className="flex justify-end gap-2"><Skeleton className="h-6 w-6" /><Skeleton className="h-6 w-6" /></div></td>
+                                    </tr>
+                                ))
                             ) : error ? (
                                 <tr>
                                     <td colSpan={6} className="text-center py-10 text-red-500">{error}</td>

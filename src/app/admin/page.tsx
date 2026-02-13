@@ -9,6 +9,8 @@ import { RecentLogsTable } from "@/app/components/RecentLogsTable";
 import { PopularContentList } from "@/app/components/PopularContentList";
 import { toastUtils } from "@/lib/toast";
 
+import { Skeleton } from "@/app/components/ui/skeleton";
+
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
@@ -50,8 +52,83 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div>
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+        </div>
+
+        {/* Stats Grid Skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex flex-col p-6 bg-white dark:bg-slate-950 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-8 w-16" />
+                </div>
+                <Skeleton className="h-10 w-10 rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Charts & Popular Content Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Login Activity Skeleton */}
+          <div className="lg:col-span-2 bg-white dark:bg-slate-950 p-6 rounded-[2rem] border border-sky-50 dark:border-slate-800 shadow-sm space-y-4">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-[300px] w-full rounded-xl" />
+          </div>
+
+          {/* Popular Content Skeleton */}
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-[2rem] border border-sky-50 dark:border-slate-800 shadow-sm space-y-4">
+            <Skeleton className="h-6 w-40" />
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-lg" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Section Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Content Distribution Skeleton */}
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-[2rem] border border-sky-50 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex justify-center">
+              <Skeleton className="h-6 w-40" />
+            </div>
+            <div className="flex justify-center py-4">
+              <Skeleton className="h-[250px] w-[250px] rounded-full" />
+            </div>
+          </div>
+
+          {/* Recent Logs Skeleton */}
+          <div className="lg:col-span-2 bg-white dark:bg-slate-950 p-6 rounded-[2rem] border border-sky-50 dark:border-slate-800 shadow-sm space-y-4">
+            <Skeleton className="h-6 w-40 mb-4" />
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex justify-between items-center py-2">
+                  <div className="flex items-center gap-3 flex-1">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-2 flex-1 max-w-[200px]">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-3 w-2/3" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-6 w-20 rounded-full hidden sm:block" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -61,13 +138,10 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Overview</h2>
-        {/* <button className="bg-sky-500 hover:bg-sky-600 transition-colors text-white p-2 rounded-lg lg:px-4 lg:py-2 text-sm flex items-center gap-2">
-                    <Download size={16} /> <span className="hidden lg:block">Export</span>
-                </button> */}
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 ">
         <StatsCard
           label="Users"
           value={stats?.users || 0}

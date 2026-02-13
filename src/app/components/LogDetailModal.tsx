@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-import { X, Copy, Check } from "lucide-react";
+import { Copy } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/app/components/ui/dialog";
 import { toastUtils } from "@/lib/toast";
 

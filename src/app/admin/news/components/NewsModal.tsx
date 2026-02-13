@@ -261,7 +261,7 @@ export default function NewsModal({ isOpen, onClose, onSuccess, newsToEdit }: Ne
                         form="news-form"
                         type="submit"
                         disabled={isLoading || isFetchingDetail}
-                        className={isEditMode ? 'bg-sky-500 hover:bg-sky-600' : 'bg-emerald-500 hover:bg-emerald-600'}
+                        className={isEditMode ? 'text-white bg-sky-500 hover:bg-sky-600' : 'text-white bg-emerald-500 hover:bg-emerald-600'}
                     >
                         {isLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
                         {isEditMode ? 'บันทึกการแก้ไข' : 'สร้างข่าวสาร'}

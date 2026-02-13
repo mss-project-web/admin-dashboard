@@ -7,15 +7,16 @@ import { authApi } from "@/lib/api/auth";
 import { systemApi } from "@/lib/api/system";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { Skeleton } from "@/app/components/ui/skeleton";
 
 export default function MenuPage() {
     const router = useRouter();
     const { user } = useAuth();
-    const [dbStatus, setDbStatus] = useState<string>("Checking...");
+    const [dbStatus, setDbStatus] = useState<string | null>(null);
     const [dbColor, setDbColor] = useState<string>("text-slate-400");
-    const [sysStatus, setSysStatus] = useState<string>("Checking...");
+    const [sysStatus, setSysStatus] = useState<string | null>(null);
     const [sysColor, setSysColor] = useState<string>("text-slate-400");
-    const [lastUpdated, setLastUpdated] = useState<string>("-");
+    const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
     useEffect(() => {
         const checkHealth = async () => {
@@ -183,19 +184,31 @@ export default function MenuPage() {
                     <div className="flex items-center justify-center gap-3">
                         <div className={`w-2 h-2 rounded-full bg-current ${sysColor} animate-pulse`} />
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">ระบบทำงานปกติ:</span>
-                        <span className={`text-xs font-black ${sysColor}`}>{sysStatus}</span>
+                        {sysStatus ? (
+                            <span className={`text-xs font-black ${sysColor}`}>{sysStatus}</span>
+                        ) : (
+                            <Skeleton className="h-4 w-12" />
+                        )}
                     </div>
 
                     <div className="flex items-center justify-center gap-3">
                         <div className={`w-2 h-2 rounded-full bg-current ${dbColor} animate-pulse`} />
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">ฐานข้อมูล:</span>
-                        <span className={`text-xs font-black ${dbColor}`}>{dbStatus}</span>
+                        {dbStatus ? (
+                            <span className={`text-xs font-black ${dbColor}`}>{dbStatus}</span>
+                        ) : (
+                            <Skeleton className="h-4 w-16" />
+                        )}
                     </div>
 
                     <div className="flex items-center justify-center gap-3">
                         <div className="w-2 h-2 rounded-full bg-current text-slate-400 animate-pulse" />
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">อัปเดตล่าสุด:</span>
-                        <span className="text-xs font-black text-slate-400">{lastUpdated}</span>
+                        {lastUpdated ? (
+                            <span className="text-xs font-black text-slate-400">{lastUpdated}</span>
+                        ) : (
+                            <Skeleton className="h-4 w-20" />
+                        )}
                     </div>
 
                 </footer>
