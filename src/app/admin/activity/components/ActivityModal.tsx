@@ -7,6 +7,7 @@ import { activityService } from "@/services/activityService";
 import Image from "next/image";
 import { Button } from "@/app/components/ui/button";
 import { toastUtils } from "@/lib/toast";
+import { handleApiError } from "@/lib/axios";
 
 interface ActivityModalProps {
     isOpen: boolean;
@@ -61,6 +62,53 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                     .then((data) => {
                         const loadedImages = data.images || [];
                         setOriginalImages(loadedImages);
+
+                        // Helper to clean potential double-serialized arrays (e.g. '["test"]')
+                        const cleanArray = (arr: string[] | undefined) => {
+                            if (!arr) return [""];
+                            return arr.map(item => {
+                                if (typeof item === 'string' && item.startsWith('[') && item.endsWith(']')) {
+                                    try {
+                                        const parsed = JSON.parse(item);
+                                        return Array.isArray(parsed) ? parsed[0] : parsed;
+                                    } catch (e) {
+                                        return item;
+                                    }
+                                }
+                                return item;
+                            }).map(item => item.replace(/^\["|"?]$/g, '').replace(/^"|"$/g, '').replace(/\\"/g, '"'));
+                            // The user's example: "[\"test 1\""
+                            // Removing `["` at start and `"]` at end, then quotes.
+                        };
+
+                        // Actually, looking at the user's input:
+                        // "objectives": [ "[\"test 1\"", "\"test 2\"]" ]
+                        // It seems the original array `["test 1", "test 2"]` was stringified to `'["test 1","test 2"]'`
+                        // Then that STRING was split by comma?
+                        // `["test 1"`  and `"test 2"]` 
+                        // If we join them back and parse?
+                        // `data.objectives.join(',')` -> `'["test 1","test 2"]'` -> JSON.parse -> `["test 1", "test 2"]`
+
+                        let cleanObjectives = data.objectives || [""];
+                        let cleanGoals = data.goals || [""];
+
+                        try {
+                            if (cleanObjectives.length > 0 && cleanObjectives[0].startsWith('[')) {
+                                const combined = cleanObjectives.join(',');
+                                const parsed = JSON.parse(combined);
+                                if (Array.isArray(parsed)) cleanObjectives = parsed;
+                            }
+                        } catch (e) { console.warn("Failed to auto-fix objectives", e); }
+
+                        try {
+                            if (cleanGoals.length > 0 && cleanGoals[0].startsWith('[')) {
+                                const combined = cleanGoals.join(',');
+                                const parsed = JSON.parse(combined);
+                                if (Array.isArray(parsed)) cleanGoals = parsed;
+                            }
+                        } catch (e) { console.warn("Failed to auto-fix goals", e); }
+
+
                         setFormData({
                             name_th: data.name_th,
                             name_eng: data.name_eng,
@@ -71,8 +119,8 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                             start_date: data.start_date ? new Date(data.start_date).toISOString().slice(0, 16) : "",
                             end_date: data.end_date ? new Date(data.end_date).toISOString().slice(0, 16) : "",
                             images: loadedImages,
-                            objectives: data.objectives?.length ? data.objectives : [""],
-                            goals: data.goals?.length ? data.goals : [""],
+                            objectives: cleanObjectives.length ? cleanObjectives : [""],
+                            goals: cleanGoals.length ? cleanGoals : [""],
                             favorite: data.favorite
                         });
                     })
@@ -139,8 +187,8 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                     start_date: formData.start_date,
                     end_date: formData.end_date,
                     favorite: formData.favorite,
-                    objectives: formData.objectives.filter(item => item.trim() !== ""),
-                    goals: formData.goals.filter(item => item.trim() !== "")
+                    objectives: formData.objectives.filter(item => item.trim() !== "").join(','),
+                    goals: formData.goals.filter(item => item.trim() !== "").join(',')
                 };
 
                 await activityService.update(activityToEdit._id, payload, newImages, deletedImageUrls);
@@ -160,13 +208,12 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                 payload.append('end_date', formData.end_date);
                 payload.append('favorite', formData.favorite.toString());
 
-                // Append Arrays
-                formData.objectives.forEach((item) => {
-                    if (item.trim()) payload.append('objectives', item);
-                });
-                formData.goals.forEach((item) => {
-                    if (item.trim()) payload.append('goals', item);
-                });
+                // Append Arrays as Comma-Separated Strings
+                const objectivesStr = formData.objectives.filter(item => item.trim() !== "").join(',');
+                const goalsStr = formData.goals.filter(item => item.trim() !== "").join(',');
+
+                if (objectivesStr) payload.append('objectives', objectivesStr);
+                if (goalsStr) payload.append('goals', goalsStr);
 
                 // Append Images
                 formData.images.forEach((img) => {
@@ -184,9 +231,13 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
             }
             onSuccess();
             onClose();
+
+
+            // ... existing imports
+
         } catch (err: any) {
             console.error(err);
-            toastUtils.error("เกิดข้อผิดพลาด", err.message || "Something went wrong");
+            toastUtils.error("เกิดข้อผิดพลาด", handleApiError(err));
         } finally {
             setIsLoading(false);
         }

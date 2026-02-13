@@ -7,6 +7,7 @@ import { prayerRoomService } from "@/services/prayerRoomService";
 import Image from "next/image";
 import { Button } from "@/app/components/ui/button";
 import { toastUtils } from "@/lib/toast";
+import { handleApiError } from "@/lib/axios";
 
 interface PrayerRoomModalProps {
     isOpen: boolean;
@@ -167,9 +168,13 @@ export default function PrayerRoomModal({ isOpen, onClose, onSuccess, prayerRoom
             }
             onSuccess();
             onClose();
+
+
+            // ... existing imports
+
         } catch (err: any) {
             console.error(err);
-            toastUtils.error("เกิดข้อผิดพลาด", err.message || "Something went wrong");
+            toastUtils.error("เกิดข้อผิดพลาด", handleApiError(err));
         } finally {
             setIsLoading(false);
         }

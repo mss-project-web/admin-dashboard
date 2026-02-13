@@ -56,8 +56,12 @@ export const handleApiError = (error: any) => {
         const data = error.response?.data as any;
 
 
+        if (data?.message) {
+            return data.message;
+        }
+
         if (status === 400 || status === 422) {
-            return data.message || "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง";
+            return "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง";
         }
 
         if (status === 401 || status === 403) {

@@ -162,7 +162,7 @@ function LoginForm() {
             deleteSecCookie(ATTEMPTS_KEY);
             deleteSecCookie(LOCKOUT_KEY);
 
-            toastUtils.success("ยินดีต้อนรับ", "เข้าสู่ระบบสำเร็จ");
+            toastUtils.success("ยินดีต้อนรับ", "เข้าสู่ระบบสำเร็จ", { duration: 2000 });
 
             // Allow toast to show briefly or just push (Next.js toast usually persists across simple push if layout doesn't unmount toaster)
             router.push("/menu");
