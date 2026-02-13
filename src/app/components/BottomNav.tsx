@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import {
     LayoutDashboard,
     History,
-    User,
+    ShieldCheck,
     Menu,
     UserCircle,
     Calendar // Import Calendar
@@ -18,7 +18,7 @@ export default function BottomNav({ onMenuClick }: { onMenuClick: () => void }) 
 
     const navItems = [
         { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-        { href: "/admin/users", label: "User Settings", icon: User, roles: ['superadmin'] },
+        { href: "/admin/users", label: "Admins", icon: ShieldCheck, roles: ['superadmin'] },
         { href: "/", label: "Home", icon: LayoutDashboard, isFloating: true },
         { href: "/admin/profile", label: "Profile", icon: UserCircle },
     ];

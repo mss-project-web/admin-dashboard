@@ -143,7 +143,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
                                 {hasSub && isSubOpen && (!isCollapsed || isOpen) && (
                                     <div className="ml-9 mt-1 space-y-1 border-l-2 border-sky-100 pl-4">
                                         {item.subItems?.map(sub => (
-                                            <Link key={sub.href} href={sub.href} className={`block py-2 text-sm ${pathname === sub.href ? "text-sky-600 font-bold" : "text-slate-500 hover:text-sky-500"}`}>{sub.label}</Link>
+                                            <Link key={sub.href} href={sub.href} onClick={() => setIsOpen(false)} className={`block py-2 text-sm ${pathname === sub.href ? "text-sky-600 font-bold" : "text-slate-500 hover:text-sky-500"}`}>{sub.label}</Link>
                                         ))}
                                     </div>
                                 )}
