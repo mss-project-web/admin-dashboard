@@ -3,7 +3,7 @@ import { BlogPost, BlogListResponse, BlogResponse, BlogGroup } from '@/types/blo
 
 export const blogService = {
     getAll: async () => {
-        const response = await api.get<BlogListResponse>(`/blog/preview`);
+        const response = await api.get<BlogListResponse>(`/blog/admin/preview`);
         if (Array.isArray(response.data)) return response.data;
         if (response.data?.data && Array.isArray(response.data.data)) return response.data.data;
         if (response.data?.data?.data && Array.isArray(response.data.data.data)) return response.data.data.data;
@@ -11,7 +11,7 @@ export const blogService = {
     },
 
     getBySlug: async (slug: string) => {
-        const response = await api.get<any>(`/blog/${slug}`);
+        const response = await api.get<any>(`/blog/admin/${slug}`);
         return response.data?.data || response.data;
     },
 

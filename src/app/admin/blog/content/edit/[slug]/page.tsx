@@ -36,6 +36,7 @@ export default function EditBlogPage() {
     const [isUploading, setIsUploading] = useState(false);
     const [translating, setTranslating] = useState(false);
     const [views, setViews] = useState(0);
+    const [status, setStatus] = useState<'draft' | 'published'>('draft');
 
     useEffect(() => {
         const loadData = async () => {
@@ -68,6 +69,7 @@ export default function EditBlogPage() {
                     setTags(blogData.tags || []);
                     setCoverImage(blogData.coverImage || "");
                     setViews(blogData.views || 0);
+                    setStatus(blogData.status || 'draft');
 
                     if (Array.isArray(blogData.content)) {
                         setContent(blogData.content);
@@ -139,7 +141,8 @@ export default function EditBlogPage() {
                 group: selectedGroup,
                 tags,
                 coverImage,
-                content, // Send blocks directly
+                content,
+                status,
             };
 
             await blogService.update(blogId, blogData);
@@ -320,6 +323,35 @@ export default function EditBlogPage() {
                                     <span className="font-medium">ยอดเข้าชม</span>
                                 </div>
                                 <span className="text-lg font-bold text-sky-600 dark:text-sky-400 font-mono">{views.toLocaleString()}</span>
+                            </div>
+                            {/* Status Toggle */}
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">สถานะ</label>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setStatus('draft')}
+                                        className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all ${status === 'draft'
+                                                ? 'bg-amber-100 text-amber-700 border-2 border-amber-400 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-600'
+                                                : 'bg-slate-50 text-slate-500 border-2 border-transparent hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-400'
+                                            }`}
+                                    >
+                                        📝 Draft
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setStatus('published')}
+                                        className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all ${status === 'published'
+                                                ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-400 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-600'
+                                                : 'bg-slate-50 text-slate-500 border-2 border-transparent hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-400'
+                                            }`}
+                                    >
+                                        🌐 Published
+                                    </button>
+                                </div>
+                                <p className="mt-1.5 text-[10px] text-slate-400">
+                                    {status === 'draft' ? 'บทความจะยังไม่แสดงบนหน้าเว็บ' : 'บทความจะแสดงบนหน้าเว็บทันที'}
+                                </p>
                             </div>
                             {/* Category */}
                             <div>

@@ -28,6 +28,7 @@ export default function BlogContentPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [sortConfig, setSortConfig] = useState<{ key: keyof BlogPost; direction: 'asc' | 'desc' | null }>({ key: 'title', direction: 'asc' });
+    const [selectedStatus, setSelectedStatus] = useState<string>('');
 
     const fetchBlogs = async () => {
         try {
@@ -70,7 +71,9 @@ export default function BlogContentPage() {
             const matchesGroup = selectedGroup === "" ||
                 (typeof b.group === 'string' ? b.group === selectedGroup : b.group?._id === selectedGroup || b.group?.name === selectedGroup);
 
-            return matchesSearch && matchesGroup;
+            const matchesStatus = selectedStatus === "" || b.status === selectedStatus;
+
+            return matchesSearch && matchesGroup && matchesStatus;
         });
 
         if (sortConfig.direction !== null) {
@@ -84,7 +87,7 @@ export default function BlogContentPage() {
             });
         }
         return items;
-    }, [blogs, searchTerm, selectedGroup, sortConfig]);
+    }, [blogs, searchTerm, selectedGroup, selectedStatus, sortConfig]);
 
     const totalPages = Math.ceil(processedBlogs.length / itemsPerPage);
     const currentItems = processedBlogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -148,6 +151,20 @@ export default function BlogContentPage() {
                                 ))}
                             </select>
                         </div>
+
+                        {/* Status Filter */}
+                        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2">
+                            <Filter size={14} className="text-slate-400" />
+                            <select
+                                value={selectedStatus}
+                                onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1); }}
+                                className="bg-transparent border-none text-xs outline-none text-slate-700 dark:text-slate-200 min-w-[100px]"
+                            >
+                                <option value="">ทุกสถานะ</option>
+                                <option value="published">Published</option>
+                                <option value="draft">Draft</option>
+                            </select>
+                        </div>
                     </div>
 
                     {/* Pagination Controls */}
@@ -184,6 +201,7 @@ export default function BlogContentPage() {
                                 <th onClick={() => requestSort('title')} className="px-6 py-3 w-1/4 cursor-pointer hover:bg-sky-50 transition-colors text-sky-600">หัวข้อบทความ <ArrowUpDown size={10} className="inline ml-1" /></th>
                                 <th className="px-6 py-3 w-[20%]">คำอธิบาย</th>
                                 <th className="px-6 py-3 w-[15%]">หมวดหมู่</th>
+                                <th className="px-6 py-3 w-24 text-center">สถานะ</th>
                                 <th onClick={() => requestSort('views')} className="px-6 py-3 w-24 text-center cursor-pointer hover:bg-sky-50 transition-colors">เข้าชม</th>
                                 <th onClick={() => requestSort('createdAt')} className="px-6 py-3 w-[15%] cursor-pointer hover:bg-sky-50 transition-colors">วันที่สร้าง</th>
                                 <th className="px-6 py-3 w-28 text-right pr-8 sticky right-0 z-20 bg-slate-50 dark:bg-slate-900 border-l border-slate-200 shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">จัดการ</th>
@@ -200,6 +218,7 @@ export default function BlogContentPage() {
                                         </td>
                                         <td className="px-6 py-4"><Skeleton className="h-4 w-full" /></td>
                                         <td className="px-6 py-4"><Skeleton className="h-4 w-20" /></td>
+                                        <td className="px-6 py-4 text-center"><Skeleton className="h-5 w-16 mx-auto rounded-full" /></td>
                                         <td className="px-6 py-4 text-center"><Skeleton className="h-4 w-12 mx-auto" /></td>
                                         <td className="px-6 py-4"><Skeleton className="h-4 w-24" /></td>
                                         <td className="px-6 py-4 text-right"><div className="flex justify-end gap-2"><Skeleton className="h-6 w-6" /><Skeleton className="h-6 w-6" /></div></td>
@@ -248,6 +267,14 @@ export default function BlogContentPage() {
                                         <td className="px-6 py-4">
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200">
                                                 {typeof blog.group === 'string' ? blog.group : blog.group?.name || '-'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${blog.status === 'published'
+                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                                }`}>
+                                                {blog.status === 'published' ? 'Published' : 'Draft'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-center text-slate-600 dark:text-slate-400 font-mono">

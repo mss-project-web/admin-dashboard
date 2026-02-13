@@ -32,6 +32,7 @@ export default function CreateBlogPage() {
     const [content, setContent] = useState<BlogContentBlock[]>([{ type: 'paragraph', data: '' }]);
     const [isUploading, setIsUploading] = useState(false);
     const [translating, setTranslating] = useState(false);
+    const [status, setStatus] = useState<'draft' | 'published'>('draft');
 
     // Auto-generate slug from title
     const handleTitleChange = (newTitle: string) => {
@@ -137,7 +138,8 @@ export default function CreateBlogPage() {
                 group: selectedGroup,
                 tags,
                 coverImage,
-                content, // Send blocks directly
+                content,
+                status,
             };
 
             await blogService.create(blogData);
@@ -295,6 +297,35 @@ export default function CreateBlogPage() {
 
                         {/* Settings Card */}
                         <div className="bg-white dark:bg-slate-950 p-4 md:p-5 rounded-xl md:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                            {/* Status Toggle */}
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">สถานะ</label>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setStatus('draft')}
+                                        className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all ${status === 'draft'
+                                                ? 'bg-amber-100 text-amber-700 border-2 border-amber-400 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-600'
+                                                : 'bg-slate-50 text-slate-500 border-2 border-transparent hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-400'
+                                            }`}
+                                    >
+                                        📝 Draft
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setStatus('published')}
+                                        className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all ${status === 'published'
+                                                ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-400 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-600'
+                                                : 'bg-slate-50 text-slate-500 border-2 border-transparent hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-400'
+                                            }`}
+                                    >
+                                        🌐 Published
+                                    </button>
+                                </div>
+                                <p className="mt-1.5 text-[10px] text-slate-400">
+                                    {status === 'draft' ? 'บทความจะยังไม่แสดงบนหน้าเว็บ' : 'บทความจะแสดงบนหน้าเว็บทันที'}
+                                </p>
+                            </div>
                             {/* Category */}
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">หมวดหมู่ *</label>

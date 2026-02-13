@@ -21,6 +21,7 @@ export interface BlogPost {
     coverImage?: string;
     images?: string[];
     author?: { id: string; name: string };
+    status?: 'draft' | 'published';
     views: number;
     publishedAt?: string;
     createdAt?: string;
