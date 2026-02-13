@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { BlogContentBlock } from "@/types/blog";
 import {
-    Image as ImageIcon, Type, Plus, X, ArrowUp, ArrowDown,
+    Image as ImageIcon, Type, X, ArrowUp, ArrowDown,
     Trash2, GripVertical, Loader2
 } from "lucide-react";
 import Image from "next/image";
 import { blogService } from "@/services/blogService";
 import { useToast } from "@/hooks/use-toast";
+import RichTextEditor from "./RichTextEditor";
 
 interface BlogBlockEditorProps {
     blocks: BlogContentBlock[];
@@ -70,12 +71,13 @@ export default function BlogBlockEditor({ blocks, onChange }: BlogBlockEditorPro
                 <div key={index} className="relative group bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 transition-all hover:shadow-md">
 
                     {/* Block Controls */}
-                    <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm z-10">
+                    <div className="absolute right-2 top-2 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm z-10">
                         <button
                             type="button"
                             onClick={() => moveBlock(index, 'up')}
                             disabled={index === 0}
                             className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500 disabled:opacity-30"
+                            title="เลื่อนขึ้น"
                         >
                             <ArrowUp size={14} />
                         </button>
@@ -84,6 +86,7 @@ export default function BlogBlockEditor({ blocks, onChange }: BlogBlockEditorPro
                             onClick={() => moveBlock(index, 'down')}
                             disabled={index === blocks.length - 1}
                             className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500 disabled:opacity-30"
+                            title="เลื่อนลง"
                         >
                             <ArrowDown size={14} />
                         </button>
@@ -92,6 +95,7 @@ export default function BlogBlockEditor({ blocks, onChange }: BlogBlockEditorPro
                             type="button"
                             onClick={() => removeBlock(index)}
                             className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded text-rose-500"
+                            title="ลบ Block นี้"
                         >
                             <Trash2 size={14} />
                         </button>
@@ -103,18 +107,19 @@ export default function BlogBlockEditor({ blocks, onChange }: BlogBlockEditorPro
                             <GripVertical size={20} />
                         </div>
 
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                             {block.type === 'paragraph' ? (
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase mb-2 flex items-center gap-1">
                                         <Type size={12} /> ย่อหน้า (Paragraph)
                                     </label>
-                                    <textarea
-                                        value={block.data as string}
-                                        onChange={(e) => updateBlockData(index, e.target.value)}
-                                        className="w-full p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg outline-none focus:ring-2 focus:ring-sky-500 min-h-[100px]"
-                                        placeholder="พิมพ์เนื้อหาที่นี่..."
-                                    />
+                                    <div className="rich-text-wrapper">
+                                        <RichTextEditor
+                                            content={block.data as string}
+                                            onChange={(html) => updateBlockData(index, html)}
+                                            placeholder="พิมพ์เนื้อหาที่นี่..."
+                                        />
+                                    </div>
                                 </div>
                             ) : (
                                 <div>
