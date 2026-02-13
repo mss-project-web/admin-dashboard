@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Search, Edit2, Trash2, Calendar, Link as LinkIcon, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Filter, X, CheckSquare, Square } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Calendar, Link as LinkIcon, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Filter, X, CheckSquare, Square, Download } from "lucide-react";
 import { newsService } from "@/services/newsService";
 import { News } from "@/types/news";
 import Image from "next/image";
@@ -146,6 +146,63 @@ export default function NewsPage() {
         });
     };
 
+    const handleExport = () => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+
+        const htmlContent = `
+            <html>
+                <head>
+                    <title>News Export</title>
+                    <style>
+                        body { font-family: 'Sarabun', sans-serif; color: black; background: white; padding: 20px; }
+                        table { width: 100%; border-collapse: collapse; border: 1px solid #000; }
+                        th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 12px; vertical-align: top; }
+                        th { background-color: #f0f0f0; font-weight: bold; text-align: center; }
+                        h1 { text-align: center; margin-bottom: 20px; font-size: 18px; }
+                        .text-center { text-align: center; }
+                        @media print {
+                            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e02\u0e48\u0e32\u0e27\u0e2a\u0e32\u0e23\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14 (${filteredNews.length} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23)</h1>
+                    <span>\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 \u0e13 \u0e27\u0e31\u0e19\u0e17\u0e35\u0e48: ${new Date().toLocaleDateString('th-TH', { dateStyle: 'long' })}</span>
+                    <br/><br/>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">\u0e25\u0e33\u0e14\u0e31\u0e1a</th>
+                                <th>\u0e0a\u0e37\u0e48\u0e2d\u0e02\u0e48\u0e32\u0e27</th>
+                                <th>\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14</th>
+                                <th style="width: 120px;">\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th>
+                                <th>\u0e25\u0e34\u0e07\u0e01\u0e4c</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filteredNews.map((news, index) => `
+                                <tr>
+                                    <td class="text-center">${index + 1}</td>
+                                    <td>${news.name}</td>
+                                    <td>${news.description || '-'}</td>
+                                    <td class="text-center">${new Date(news.date).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
+                                    <td>${news.link || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <script>
+                        window.onload = function() { window.print(); }
+                    </script>
+                </body>
+            </html>
+        `;
+
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+    };
+
     return (
         <div className="w-full space-y-6 pb-32">
             <NewsModal
@@ -184,6 +241,13 @@ export default function NewsPage() {
                             ลบที่เลือก ({selectedItems.size})
                         </button>
                     )}
+                    <button
+                        onClick={handleExport}
+                        className="cursor-pointer flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-all text-slate-700"
+                    >
+                        <Download size={14} />
+                        <span className="inline">Export</span>
+                    </button>
                     <button
                         onClick={handleAddClick}
                         className="cursor-pointer flex items-center gap-1.5 bg-sky-500 hover:bg-sky-600 text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold shadow-md transition-all"

@@ -1,14 +1,16 @@
 "use client";
 import {
     LayoutDashboard, Settings, FileText, Users,
-    X, LogOut, ChevronLeft, ChevronRight, ChevronDown
+    X, LogOut, ChevronLeft, ChevronRight, ChevronDown, User as UserIcon
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from 'next/navigation';
 import { useAuth } from "@/hooks/useAuth";
 import { authApi } from "@/lib/api/auth";
+import { userService } from "@/services/userService";
+import ProfileModal from "./ProfileModal";
 
 const menuItems = [
     { icon: LayoutDashboard, label: "ภาพรวม", href: "/admin" },
@@ -37,6 +39,44 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [openMenus, setOpenMenus] = useState<string[]>([]);
 
+    // Profile state
+    const [profileName, setProfileName] = useState("");
+    const [profileInitials, setProfileInitials] = useState("");
+    const [profileRole, setProfileRole] = useState("");
+    const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Fetch profile on mount
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const me = await userService.getMe();
+                const fn = me.firstName || "";
+                const ln = me.lastName || "";
+                setProfileName(`${fn} ${ln}`.trim());
+                setProfileInitials(`${fn.charAt(0)}${ln.charAt(0)}`.toUpperCase());
+                setProfileRole(me.role);
+            } catch (error) {
+                console.error("Failed to load profile for sidebar", error);
+                setProfileName("User");
+                setProfileInitials("U");
+            }
+        };
+        fetchProfile();
+    }, []);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowProfileDropdown(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     const toggleSubmenu = (label: string) => {
         if (isCollapsed && !isOpen) return;
         setOpenMenus(prev => prev.includes(label) ? prev.filter(i => i !== label) : [...prev, label]);
@@ -51,6 +91,12 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
         } catch (error) {
             console.error("Logout failed", error);
         }
+    };
+
+    const roleLabel: Record<string, string> = {
+        superadmin: "Super Admin",
+        admin: "Admin",
+        user: "User",
     };
 
     return (
@@ -106,13 +152,60 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
                     })}
                 </nav>
 
-                <div className="flex-none p-4 border-t border-sky-50 dark:border-slate-800">
-                    <button className={`cursor-pointer flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-rose-500 hover:bg-rose-50 font-bold transition-all ${isCollapsed && !isOpen ? "justify-center" : ""}`} onClick={handleLogout}>
-                        <LogOut size={20} />
-                        {(!isCollapsed || isOpen) && <span>ออกจากระบบ</span>}
-                    </button>
+                {/* Profile Section */}
+                <div className="flex-none p-3 border-t border-sky-50 dark:border-slate-800" ref={dropdownRef}>
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                            className={`cursor-pointer flex w-full items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all ${isCollapsed && !isOpen ? "justify-center" : ""}`}
+                        >
+                            {/* Avatar */}
+                            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 flex items-center justify-center text-white text-sm font-bold shadow-md flex-shrink-0">
+                                {profileInitials || "U"}
+                            </div>
+                            {(!isCollapsed || isOpen) && (
+                                <div className="flex-1 text-left min-w-0">
+                                    <div className="text-sm font-bold text-slate-700 dark:text-white truncate">{profileName || "Loading..."}</div>
+                                    <div className="text-[10px] text-slate-400 truncate">{roleLabel[profileRole] || profileRole}</div>
+                                </div>
+                            )}
+                            {(!isCollapsed || isOpen) && (
+                                <ChevronDown size={14} className={`text-slate-400 transition-transform ${showProfileDropdown ? "rotate-180" : ""}`} />
+                            )}
+                        </button>
+
+                        {/* Dropdown */}
+                        {showProfileDropdown && (
+                            <div className={`absolute bottom-full mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-50 ${isCollapsed && !isOpen ? "left-0 w-48" : "left-0 right-0"}`}>
+                                <button
+                                    onClick={() => {
+                                        setShowProfileDropdown(false);
+                                        setShowProfileModal(true);
+                                    }}
+                                    className="cursor-pointer flex items-center gap-3 w-full px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                >
+                                    <UserIcon size={16} />
+                                    <span className="font-medium">โปรไฟล์</span>
+                                </button>
+                                <div className="border-t border-slate-100 dark:border-slate-800" />
+                                <button
+                                    onClick={() => {
+                                        setShowProfileDropdown(false);
+                                        handleLogout();
+                                    }}
+                                    className="cursor-pointer flex items-center gap-3 w-full px-4 py-3 text-sm text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                                >
+                                    <LogOut size={16} />
+                                    <span className="font-bold">ออกจากระบบ</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </aside>
+
+            {/* Profile Modal */}
+            <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
         </>
     );
 }

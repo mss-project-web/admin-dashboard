@@ -2,11 +2,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-    Home,
     LayoutDashboard,
     History,
     User,
     Menu,
+    UserCircle,
     Calendar // Import Calendar
 } from "lucide-react";
 
@@ -17,10 +17,10 @@ export default function BottomNav({ onMenuClick }: { onMenuClick: () => void }) 
     const { isSuperAdmin } = useAuth();
 
     const navItems = [
-        { href: "/admin", label: "Home", icon: Home },
+        { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
         { href: "/admin/users", label: "User Settings", icon: User, roles: ['superadmin'] },
         { href: "/", label: "Home", icon: LayoutDashboard, isFloating: true },
-        { href: "/admin/history", label: "History", icon: History },
+        { href: "/admin/profile", label: "Profile", icon: UserCircle },
     ];
 
     const visibleNavItems = navItems.filter(item => !item.roles || (item.roles.includes('superadmin') && isSuperAdmin));
