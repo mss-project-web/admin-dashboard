@@ -1,5 +1,17 @@
 import type { NextConfig } from "next";
 
+const withPWA = require("@ducanh2912/next-pwa").default({
+  dest: "public",
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  swMinify: true,
+  disable: false,
+  workboxOptions: {
+    disableDevLogs: true,
+  },
+});
+
 const nextConfig: NextConfig = {
   async rewrites() {
     const apiUrl = process.env.NODE_ENV === 'production'
@@ -25,4 +37,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withPWA(nextConfig);

@@ -23,8 +23,8 @@ export const metadata: Metadata = {
   description: "MSS - Admin dashboard",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon.png",
-    apple: "/icon.png",
+    icon: "/icon.svg",
+    apple: "/icon.svg",
   },
   appleWebApp: {
     capable: true,
