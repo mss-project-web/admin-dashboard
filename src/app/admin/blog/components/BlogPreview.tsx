@@ -13,7 +13,7 @@ interface BlogPreviewProps {
 
 export default function BlogPreview({ blocks, onClose }: BlogPreviewProps) {
     return (
-        <div className="fixed inset-0 z-50 bg-white dark:bg-slate-950 overflow-y-auto">
+        <div className="fixed inset-0 z-[998] bg-white dark:bg-slate-950 overflow-y-auto">
             {/* Header / Close Button */}
             <div className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
                 <h2 className="font-bold text-slate-800 dark:text-white">ตัวอย่างบทความ (Preview)</h2>

@@ -3,31 +3,46 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     LayoutDashboard,
-    History,
     ShieldCheck,
     Menu,
     UserCircle,
-    Calendar // Import Calendar
+    FileText,
+    Home,
+    Logs
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
+import { NavItem } from "@/types/navItem";
 
 export default function BottomNav({ onMenuClick }: { onMenuClick: () => void }) {
     const pathname = usePathname();
     const { isSuperAdmin } = useAuth();
 
-    const navItems = [
-        { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-        { href: "/admin/users", label: "Admins", icon: ShieldCheck, roles: ['superadmin'] },
-        { href: "/", label: "Home", icon: LayoutDashboard, isFloating: true },
-        { href: "/admin/profile", label: "Profile", icon: UserCircle },
-    ];
+    const leftNavItems: NavItem[] = isSuperAdmin
+        ? [
+            { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+            { href: "/admin/users", label: "Admins", icon: ShieldCheck },
+        ]
+        : [
+            { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+            { href: "/admin/blog", label: "Blog", icon: FileText },
+        ];
 
-    const visibleNavItems = navItems.filter(item => !item.roles || (item.roles.includes('superadmin') && isSuperAdmin));
+    const centerFloatingItem: NavItem = { href: "/", label: "Home", icon: Home, isFloating: true };
+
+    const rightNavItems: NavItem[] =
+        isSuperAdmin
+            ? [
+                { href: "/admin/log", label: "Logs", icon: Logs },
+            ]
+            : [
+                { href: "/admin/profile", label: "Profile", icon: UserCircle },
+            ];
+
+    const visibleNavItems = [...leftNavItems, centerFloatingItem, ...rightNavItems];
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-[100] lg:hidden">
-            {/* Container หลักที่มีความโค้งและเงา */}
             <div className="relative mx-4 mb-4 flex items-center justify-between bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl px-2 py-2 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] border border-white/20">
 
                 {visibleNavItems.map((item, index) => {

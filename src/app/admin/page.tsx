@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Users, Package, Banknote, TrendingUp, Download, FileText, Newspaper, Church } from "lucide-react";
+import { Users, Package, FileText, Newspaper, Globe, Eye, MousePointerClick } from "lucide-react";
 import { dashboardApi } from "@/lib/api/dashboard";
 import { StatsCard } from "@/app/components/chart/StatsCard";
 import { LoginActivityChart } from "@/app/components/chart/LoginActivityChart";
@@ -8,36 +8,48 @@ import { ContentDistributionChart } from "@/app/components/chart/ContentDistribu
 import { RecentLogsTable } from "@/app/components/RecentLogsTable";
 import { PopularContentList } from "@/app/components/PopularContentList";
 import { toastUtils } from "@/lib/toast";
+import { useAuth } from "@/hooks/useAuth";
 
 import { Skeleton } from "@/app/components/ui/skeleton";
 
 export default function AdminDashboard() {
+  const { isSuperAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
   const [charts, setCharts] = useState<any>(null);
   const [popular, setPopular] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
+  const [cloudflareAnalytics, setCloudflareAnalytics] = useState<any>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, chartsRes, popularRes, logsRes] = await Promise.all([
+        const promises = [
           dashboardApi.getStats(),
           dashboardApi.getCharts(),
           dashboardApi.getPopularContent(),
           dashboardApi.getRecentLogs()
-        ]);
+        ];
 
-        // Adjust based on actual API response structure (checking response wrapper)
+        if (isSuperAdmin) {
+          promises.push(dashboardApi.getCloudflareAnalytics());
+        }
+
+        const results = await Promise.all(promises);
+        const [statsRes, chartsRes, popularRes, logsRes, cloudflareRes] = results;
+
         setStats(statsRes.data?.data || statsRes.data || statsRes);
         setCharts(chartsRes.data?.data || chartsRes.data || chartsRes);
 
-        // Popular content might be inside a 'data' array in 'data' object
         const popularData = popularRes.data?.data?.activities || popularRes.data?.activities || popularRes.data || [];
         setPopular(popularData);
 
         const logsData = logsRes.data?.data || logsRes.data || [];
         setLogs(logsData);
+
+        if (isSuperAdmin && cloudflareRes) {
+          setCloudflareAnalytics(cloudflareRes.data?.data || cloudflareRes.data || null);
+        }
 
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -48,7 +60,7 @@ export default function AdminDashboard() {
     };
 
     fetchData();
-  }, []);
+  }, [isSuperAdmin]);
 
   if (loading) {
     return (
@@ -139,6 +151,39 @@ export default function AdminDashboard() {
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Overview</h2>
       </div>
+
+      {/* Cloudflare Analytics - SuperAdmin Only */}
+      {isSuperAdmin && cloudflareAnalytics && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-2">
+                <MousePointerClick size={16} />
+                <span>Total Requests</span>
+              </div>
+              <p className="text-2xl font-bold text-sky-600 dark:text-sky-400">
+                {cloudflareAnalytics.totalRequests?.toLocaleString() || 0}
+              </p>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-2">
+                <FileText size={16} />
+                <span>Total Page Views</span>
+              </div>
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {cloudflareAnalytics.totalPageViews?.toLocaleString() || 0}
+              </p>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-2">
+                <Eye size={16} />
+                <span>Unique Visitors</span>
+              </div>
+              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                {cloudflareAnalytics.totalUniqueVisitors?.toLocaleString() || 0}
+              </p>
+            </div>
+          </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 ">

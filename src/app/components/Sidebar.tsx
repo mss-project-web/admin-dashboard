@@ -1,7 +1,7 @@
 "use client";
 import {
-    LayoutDashboard, Settings, FileText, Users,
-    X, LogOut, ChevronLeft, ChevronRight, ChevronDown, User as UserIcon
+    LayoutDashboard, Settings, FileText, Users, Logs,
+    LogOut, ChevronLeft, ChevronRight, ChevronDown, User as UserIcon
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,13 +15,13 @@ import ProfileModal from "./ProfileModal";
 const menuItems = [
     { icon: LayoutDashboard, label: "ภาพรวม", href: "/admin" },
     {
-        icon: FileText, label: "จัดการบทความ", href: "/admin/blog",
+        icon: FileText, label: "จัดการบทความ",
         subItems: [
             { label: "เนื้อหาบทความ", href: "/admin/blog/content" },
         ]
     },
     {
-        icon: Settings, label: "ตั้งค่าเว็บหลัก", href: "/admin",
+        icon: Settings, label: "ตั้งค่าเว็บหลัก",
         subItems: [
             { label: "จัดการกิจกรรม", href: "/admin/activity" },
             { label: "จัดการห้องละหมาด", href: "/admin/prayer-rooms" },
@@ -29,7 +29,7 @@ const menuItems = [
         ]
     },
     { icon: Users, label: "จัดการผู้ใช้", href: "/admin/users", roles: ['superadmin'] },
-    { icon: FileText, label: "System Logs", href: "/admin/log", roles: ['superadmin'] },
+    { icon: Logs, label: "System Logs", href: "/admin/log", roles: ['superadmin'] },
 ];
 
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v: boolean) => void }) {
@@ -124,7 +124,10 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
                     {visibleMenuItems.map((item) => {
                         const hasSub = item.subItems && item.subItems.length > 0;
                         const isSubOpen = openMenus.includes(item.label);
-                        const active = pathname.startsWith(item.href);
+
+                        const active = item.href
+                            ? pathname.startsWith(item.href)
+                            : hasSub && item.subItems?.some(sub => pathname.startsWith(sub.href));
 
                         return (
                             <div key={item.label}>
@@ -134,12 +137,12 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
                                         {(!isCollapsed || isOpen) && <span className="flex-1 text-left font-medium">{item.label}</span>}
                                         {(!isCollapsed || isOpen) && <ChevronDown size={14} className={isSubOpen ? "rotate-180" : ""} />}
                                     </button>
-                                ) : (
+                                ) : item.href ? (
                                     <Link href={item.href} onClick={() => setIsOpen(false)} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${pathname === item.href ? "bg-sky-500 text-white shadow-lg shadow-sky-500/20" : "text-slate-500 hover:bg-slate-50"}`}>
                                         <item.icon size={20} />
                                         {(!isCollapsed || isOpen) && <span className="font-medium">{item.label}</span>}
                                     </Link>
-                                )}
+                                ) : null}
                                 {hasSub && isSubOpen && (!isCollapsed || isOpen) && (
                                     <div className="ml-9 mt-1 space-y-1 border-l-2 border-sky-100 pl-4">
                                         {item.subItems?.map(sub => (

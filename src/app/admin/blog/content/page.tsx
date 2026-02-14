@@ -125,8 +125,8 @@ export default function BlogContentPage() {
             <div className="top-0 z-30 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-sm mb-4">
                 <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
                     {/* Search & Filter Group */}
-                    <div className="flex items-center gap-3 w-full lg:w-auto">
-                        <div className="relative flex-1 lg:w-96">
+                    <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                        <div className="relative flex-1 min-w-[200px] lg:w-96">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                             <input
                                 type="text"
@@ -139,11 +139,11 @@ export default function BlogContentPage() {
 
                         {/* Category Filter */}
                         <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2">
-                            <Filter size={14} className="text-slate-400" />
+                            <Filter size={14} className="text-slate-400 flex-shrink-0" />
                             <select
                                 value={selectedGroup}
                                 onChange={(e) => { setSelectedGroup(e.target.value); setCurrentPage(1); }}
-                                className="bg-transparent border-none text-xs outline-none text-slate-700 dark:text-slate-200 min-w-[120px]"
+                                className="bg-transparent border-none text-xs outline-none text-slate-700 dark:text-slate-200 min-w-[90px] max-w-[140px]"
                             >
                                 <option value="">ทุกหมวดหมู่</option>
                                 {groups.map((g, i) => (
@@ -154,11 +154,11 @@ export default function BlogContentPage() {
 
                         {/* Status Filter */}
                         <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2">
-                            <Filter size={14} className="text-slate-400" />
+                            <Filter size={14} className="text-slate-400 flex-shrink-0" />
                             <select
                                 value={selectedStatus}
                                 onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1); }}
-                                className="bg-transparent border-none text-xs outline-none text-slate-700 dark:text-slate-200 min-w-[100px]"
+                                className="bg-transparent border-none text-xs outline-none text-slate-700 dark:text-slate-200 min-w-[80px] max-w-[120px]"
                             >
                                 <option value="">ทุกสถานะ</option>
                                 <option value="published">Published</option>
@@ -271,8 +271,8 @@ export default function BlogContentPage() {
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${blog.status === 'published'
-                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                                                 }`}>
                                                 {blog.status === 'published' ? 'Published' : 'Draft'}
                                             </span>

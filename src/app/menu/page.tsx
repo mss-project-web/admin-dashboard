@@ -139,7 +139,7 @@ export default function MenuPage() {
                                 title: "จัดการเว็บหลัก",
                                 desc: "จัดการกิจกิจกรรม ห้องละหมาด และข่าวสาร",
                                 href: "/admin/activity",
-                                color: "group-hover:bg-blue-500",
+                                color: "group-hover:text-blue-500",
                                 iconBg: "group-hover:bg-blue-500",
                             },
                             {
