@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from "@/hooks/useAuth";
 import { authApi } from "@/lib/api/auth";
 import { userService } from "@/services/userService";
-import ProfileModal from "./ProfileModal";
+import ProfileModal from "../ProfileModal";
 
 const menuItems = [
     { icon: LayoutDashboard, label: "ภาพรวม", href: "/admin" },
@@ -102,9 +102,9 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
 
     return (
         <>
-            <div className={`fixed inset-0 z-[60] bg-slate-900/50 backdrop-blur-sm lg:hidden transition-opacity ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"}`} onClick={() => setIsOpen(false)} />
+            <div className={`fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden transition-opacity ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"}`} onClick={() => setIsOpen(false)} />
 
-            <aside className={`fixed inset-y-0 left-0 z-[120] transition-all duration-300 bg-white dark:bg-slate-950 border-r border-sky-100 dark:border-slate-800 flex flex-col h-screen
+            <aside className={`fixed inset-y-0 left-0 z-50 transition-all duration-300 bg-white dark:bg-slate-950 border-r border-sky-100 dark:border-slate-800 flex flex-col h-screen
           ${isOpen ? "translate-x-0" : "-translate-x-full"} 
           lg:translate-x-0 lg:static 
           ${isCollapsed ? "lg:w-20" : "lg:w-64"} w-[280px]`}>

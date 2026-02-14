@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from "react";
 import {
     Plus, Search, Edit2, Trash2,
-    ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
     ArrowUpDown, MapPin, Calendar, Star, Loader2
 } from "lucide-react";
 import { activityService } from "@/services/activityService";
@@ -13,7 +12,12 @@ import Image from "next/image";
 import { Skeleton } from "@/app/components/ui/skeleton";
 
 import ActivityModal from "./components/ActivityModal";
-import DeleteActivityModal from "./components/DeleteActivityModal";
+import DeleteModal from "@/app/components/ui/DeleteModal";
+import { Pagination, PaginationInfo } from "@/app/components/ui/Pagination";
+import { TableSkeleton } from "@/app/components/ui/TableSkeleton";
+import { SortableHeader, TableHeader } from "@/app/components/ui/SortableHeader";
+import { FilterBar } from "@/app/components/ui/FilterBar";
+import { PageHeader } from "@/app/components/ui/PageHeader";
 
 export default function ActivityPage() {
     const [activities, setActivities] = useState<ActivityListItem[]>([]);
@@ -32,6 +36,7 @@ export default function ActivityPage() {
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [activityToDelete, setActivityToDelete] = useState<ActivityListItem | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchActivities = async () => {
         try {
@@ -63,6 +68,22 @@ export default function ActivityPage() {
     const handleDeleteClick = (activity: ActivityListItem) => {
         setActivityToDelete(activity);
         setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!activityToDelete) return;
+        setIsDeleting(true);
+        try {
+            await activityService.delete(activityToDelete._id);
+            setRefreshKey(prev => prev + 1);
+            setIsDeleteModalOpen(false);
+            setActivityToDelete(null);
+        } catch (error) {
+            console.error(error);
+            setError("Failed to delete activity");
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     const processedActivities = useMemo(() => {
@@ -110,100 +131,64 @@ export default function ActivityPage() {
                 currentFavoriteCount={favoriteCount}
             />
 
-            <DeleteActivityModal
+            <DeleteModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
-                onSuccess={() => { setRefreshKey(prev => prev + 1); setIsDeleteModalOpen(false); }}
-                activityToDelete={activityToDelete}
+                onConfirm={confirmDelete}
+                title="ยืนยันการลบกิจกรรม"
+                description="คุณแน่ใจหรือไม่ที่จะลบกิจกรรม"
+                itemName={activityToDelete?.name_th || ""}
+                isDeleting={isDeleting}
             />
 
             {/* Headers */}
-            <div className="flex items-center justify-between px-1">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                        <div className="w-1.5 h-6 bg-sky-500 rounded-full" />
-                        จัดการกิจกรรม
-                    </h2>
-                </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={handleAddClick}
-                        className="cursor-pointer flex items-center gap-1.5 bg-sky-500 hover:bg-sky-600 text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold shadow-md transition-all active:scale-95"
-                    >
-                        <Plus size={16} />
-                        <span className="inline sm:hidden">เพิ่ม</span>
-                        <span className="hidden sm:inline">เพิ่มกิจกรรมใหม่</span>
-                    </button>
-                </div>
-            </div>
+            <PageHeader
+                title="จัดการกิจกรรม"
+                colorClass="bg-sky-500"
+                action={{
+                    label: "เพิ่มกิจกรรมใหม่",
+                    onClick: handleAddClick
+                }}
+            />
 
-            {/* Toolbar */}
-            <div className="top-0 z-30 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-sm mb-4">
-                <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
-                    <div className="relative w-full lg:w-96">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input
-                            type="text"
-                            placeholder="ค้นหา ชื่อกิจกรรม, สถานที่..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-1 focus:ring-sky-500"
-                        />
-                    </div>
+            {/* Controls */}
+            <div className="bg-white dark:bg-slate-950 p-4 rounded-xl border-x border-t border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                    <FilterBar
+                        searchTerm={searchTerm}
+                        onSearchChange={setSearchTerm}
+                        placeholder="ค้นหา ชื่อกิจกรรม, สถานที่..."
+                        className="w-full lg:w-auto mb-0"
+                    />
 
-                    {/* Pagination Controls */}
-                    <div className="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-end">
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-                            <span>แสดง:</span>
-                            <select
-                                value={itemsPerPage}
-                                onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
-                                className="bg-slate-100 dark:bg-slate-800 border-none rounded px-2 py-1 text-sky-600 outline-none"
-                            >
-                                {[10, 20, 50, 100].map(val => <option key={val} value={val}>{val}</option>)}
-                            </select>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                            <button disabled={currentPage === 1} onClick={() => setCurrentPage(1)} className="p-1.5 hover:bg-slate-100 rounded disabled:opacity-30"><ChevronsLeft size={16} /></button>
-                            <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} className="p-1.5 hover:bg-slate-100 rounded disabled:opacity-30"><ChevronLeft size={16} /></button>
-                            <span className="mx-2 text-xs font-bold text-sky-600">หน้า {currentPage} / {totalPages || 1}</span>
-                            <button disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(prev => prev + 1)} className="p-1.5 hover:bg-slate-100 rounded disabled:opacity-30"><ChevronRight size={16} /></button>
-                            <button disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(totalPages)} className="p-1.5 hover:bg-slate-100 rounded disabled:opacity-30"><ChevronsRight size={16} /></button>
-                        </div>
-                    </div>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        itemsPerPage={itemsPerPage}
+                        totalItems={processedActivities.length}
+                        onPageChange={setCurrentPage}
+                        onItemsPerPageChange={setItemsPerPage}
+                    />
                 </div>
             </div>
 
             {/* Table */}
-            <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden mt-0">
                 <div className="overflow-x-auto custom-scrollbar pb-2">
                     <table className="w-full text-left border-collapse table-fixed min-w-[950px]">
                         <thead className="z-20 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
                             <tr>
-                                <th className="px-6 py-3 w-20 text-center">รูปภาพ</th>
-                                <th onClick={() => requestSort('name_th')} className="px-6 py-3 w-1/5 cursor-pointer hover:bg-sky-50 transition-colors text-sky-600">ชื่อกิจกรรม <ArrowUpDown size={10} className="inline ml-1" /></th>
-                                <th onClick={() => requestSort('description')} className="px-6 py-3 w-[30%] min-w-[300px] cursor-pointer hover:bg-sky-50 transition-colors">รายละเอียด</th>
-                                <th onClick={() => requestSort('location')} className="px-6 py-3 cursor-pointer hover:bg-sky-50 transition-colors">สถานที่</th>
-                                <th onClick={() => requestSort('favorite')} className="px-6 py-3 w-24 text-center cursor-pointer hover:bg-sky-50 transition-colors">แนะนำ</th>
+                                <TableHeader label="รูปภาพ" className="w-20 text-center" />
+                                <SortableHeader label="ชื่อกิจกรรม" sortKey="name_th" currentSort={sortConfig} onSort={requestSort} className="w-1/5" />
+                                <SortableHeader label="รายละเอียด" sortKey="description" currentSort={sortConfig} onSort={requestSort} className="w-[30%] min-w-[300px]" />
+                                <SortableHeader label="สถานที่" sortKey="location" currentSort={sortConfig} onSort={requestSort} />
+                                <SortableHeader label="แนะนำ" sortKey="favorite" currentSort={sortConfig} onSort={requestSort} className="w-24 text-center" />
                                 <th className="px-6 py-3 w-28 text-right pr-8 sticky right-0 z-20 bg-slate-50 dark:bg-slate-900 border-l border-slate-200 shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody className="text-[13px] divide-y divide-slate-100 dark:divide-slate-800">
                             {loading ? (
-                                [...Array(5)].map((_, i) => (
-                                    <tr key={i} className="bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
-                                        <td className="px-6 py-4"><Skeleton className="h-10 w-16 rounded-md" /></td>
-                                        <td className="px-6 py-4">
-                                            <Skeleton className="h-4 w-3/4 mb-1" />
-                                            <Skeleton className="h-3 w-1/2" />
-                                        </td>
-                                        <td className="px-6 py-4"><Skeleton className="h-4 w-full" /></td>
-                                        <td className="px-6 py-4"><div className="flex gap-1"><Skeleton className="h-4 w-4" /><Skeleton className="h-4 w-24" /></div></td>
-                                        <td className="px-6 py-4 text-center"><Skeleton className="h-6 w-6 rounded-full mx-auto" /></td>
-                                        <td className="px-6 py-4 text-right"><div className="flex justify-end gap-2"><Skeleton className="h-6 w-6" /><Skeleton className="h-6 w-6" /></div></td>
-                                    </tr>
-                                ))
+                                <TableSkeleton columns={6} />
                             ) : error ? (
                                 <tr>
                                     <td colSpan={6} className="text-center py-10 text-red-500">{error}</td>
@@ -273,9 +258,7 @@ export default function ActivityPage() {
                 </div>
             </div>
 
-            <div className="p-4 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl flex justify-center items-center text-xs font-bold text-slate-400 uppercase tracking-widest shadow-sm">
-                <span>Total Records: {processedActivities.length}</span>
-            </div>
+            <PaginationInfo totalItems={processedActivities.length} />
         </div>
     );
 }

@@ -1,8 +1,8 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/app/components/Sidebar";
-import BottomNav from "@/app/components/BottomNav";
+import Sidebar from "@/app/components/Nav/Sidebar";
+import BottomNav from "@/app/components/Nav/BottomNav";
 import { Menu, LogOut, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { authApi } from "@/lib/api/auth";
@@ -42,7 +42,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <div className="flex-1 flex flex-col min-w-0 relative">
 
-                <header className="flex-none h-16 flex items-center justify-between px-4 md:px-8 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-sky-100 dark:border-slate-800 z-40">
+                <header className="flex-none h-16 flex items-center justify-between px-4 md:px-8 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-sky-100 dark:border-slate-800 z-30">
                     <div className="flex items-center gap-4">
                         <button
                             className="lg:hidden p-2 hover:bg-sky-50 rounded-lg text-slate-500"

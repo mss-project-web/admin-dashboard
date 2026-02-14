@@ -1,55 +1,76 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Plus, Search, Edit2, Trash2, Calendar, Link as LinkIcon, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Filter, X, CheckSquare, Square } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Plus, Search, Edit2, Trash2, Calendar, Link as LinkIcon, Loader2, Filter, X, CheckSquare, Square } from "lucide-react";
 import { newsService } from "@/services/newsService";
 import { News } from "@/types/news";
 import Image from "next/image";
-import { Skeleton } from "@/app/components/ui/skeleton";
 
 import NewsModal from "./components/NewsModal";
-import DeleteNewsModal from "./components/DeleteNewsModal";
+import DeleteModal from "@/app/components/ui/DeleteModal";
+import { Pagination, PaginationInfo } from "@/app/components/ui/Pagination";
+import { GridSkeleton } from "@/app/components/ui/GridSkeleton";
+import { FilterBar, FilterSelect } from "@/app/components/ui/FilterBar";
+import { PageHeader } from "@/app/components/ui/PageHeader";
+import { Button } from "@/app/components/ui/button";
 
 const MONTHS = [
     { value: "", label: "ทุกเดือน" },
-    { value: "0", label: "มกราคม" }, { value: "1", label: "กุมภาพันธ์" }, { value: "2", label: "มีนาคม" },
-    { value: "3", label: "เมษายน" }, { value: "4", label: "พฤษภาคม" }, { value: "5", label: "มิถุนายน" },
-    { value: "6", label: "กรกฎาคม" }, { value: "7", label: "สิงหาคม" }, { value: "8", label: "กันยายน" },
-    { value: "9", label: "ตุลาคม" }, { value: "10", label: "พฤศจิกายน" }, { value: "11", label: "ธันวาคม" }
+    { value: "01", label: "มกราคม" },
+    { value: "02", label: "กุมภาพันธ์" },
+    { value: "03", label: "มีนาคม" },
+    { value: "04", label: "เมษายน" },
+    { value: "05", label: "พฤษภาคม" },
+    { value: "06", label: "มิถุนายน" },
+    { value: "07", label: "กรกฎาคม" },
+    { value: "08", label: "สิงหาคม" },
+    { value: "09", label: "กันยายน" },
+    { value: "10", label: "ตุลาคม" },
+    { value: "11", label: "พฤศจิกายน" },
+    { value: "12", label: "ธันวาคม" }
 ];
 
 export default function NewsPage() {
-    const [newsList, setNewsList] = useState<News[]>([]);
+    const [news, setNews] = useState<News[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
     const [refreshKey, setRefreshKey] = useState(0);
-    const [searchTerm, setSearchTerm] = useState("");
 
-    // Filter State
+    const [searchTerm, setSearchTerm] = useState("");
     const [selectedMonth, setSelectedMonth] = useState("");
     const [selectedYear, setSelectedYear] = useState("");
-
-    // Selection State
-    const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-
-    // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(20);
+    const [itemsPerPage, setItemsPerPage] = useState(12);
 
     // Modal States
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedNews, setSelectedNews] = useState<News | null>(null);
+    const [selectedNewsItem, setSelectedNewsItem] = useState<News | null>(null);
+
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [newsToDelete, setNewsToDelete] = useState<News[]>([]);
+    const [newsToDelete, setNewsToDelete] = useState<News | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // Multi-select state
+    const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+    const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+
+    const years = useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        return Array.from({ length: 5 }, (_, i) => {
+            const y = currentYear - i;
+            return { value: y.toString(), label: (y + 543).toString() };
+        });
+    }, []);
 
     const fetchNews = async () => {
         try {
             setLoading(true);
             const data = await newsService.getAll();
-            // Sort by date descending
-            const sorted = (data || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            setNewsList(sorted);
+            setNews(data);
         } catch (err) {
             console.error("Failed to fetch news:", err);
+            setError("Failed to load news");
         } finally {
             setLoading(false);
         }
@@ -59,92 +80,106 @@ export default function NewsPage() {
         fetchNews();
     }, [refreshKey]);
 
-    // Years for filter (Current year back 10 years)
-    const years = useMemo(() => {
-        const currentYear = new Date().getFullYear();
-        const y = [{ value: "", label: "ทุกปี" }];
-        for (let i = 0; i < 7; i++) {
-            y.push({ value: (currentYear - i).toString(), label: (currentYear - i + 543).toString() });
-        }
-        return y;
-    }, []);
-
     const handleAddClick = () => {
-        setSelectedNews(null);
+        setSelectedNewsItem(null);
         setIsModalOpen(true);
     };
 
-    const handleEditClick = (news: News) => {
-        setSelectedNews(news);
+    const handleEditClick = (item: News) => {
+        setSelectedNewsItem(item);
         setIsModalOpen(true);
     };
 
-    const handleDeleteClick = (news: News) => {
-        setNewsToDelete([news]);
+    const handleDeleteClick = (item: News) => {
+        setNewsToDelete(item);
         setIsDeleteModalOpen(true);
     };
 
-    const handleBulkDeleteClick = () => {
-        const itemsToDelete = newsList.filter(n => selectedItems.has(n._id));
-        setNewsToDelete(itemsToDelete);
-        setIsDeleteModalOpen(true);
-    };
-
-    const toggleSelection = (id: string) => {
-        const newSelection = new Set(selectedItems);
-        if (newSelection.has(id)) {
-            newSelection.delete(id);
-        } else {
-            newSelection.add(id);
+    const confirmDelete = async () => {
+        if (!newsToDelete) return;
+        setIsDeleting(true);
+        try {
+            await newsService.delete(newsToDelete._id);
+            setRefreshKey(prev => prev + 1);
+            setIsDeleteModalOpen(false);
+            setNewsToDelete(null);
+        } catch (error) {
+            console.error(error);
+            setError("Failed to delete news");
+        } finally {
+            setIsDeleting(false);
         }
-        setSelectedItems(newSelection);
     };
 
-    const handleSelectAll = () => {
+    // Toggle selection of a single item
+    const toggleSelection = (id: string) => {
+        const newSelected = new Set(selectedItems);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedItems(newSelected);
+    };
+
+    // Select/Deselect all visible items
+    const toggleSelectAll = () => {
         if (selectedItems.size === filteredNews.length && filteredNews.length > 0) {
             setSelectedItems(new Set());
         } else {
-            setSelectedItems(new Set(filteredNews.map(n => n._id)));
+            const newSelected = new Set(filteredNews.map(item => item._id));
+            setSelectedItems(newSelected);
+        }
+    };
+
+    const handleBulkDeleteClick = () => {
+        if (selectedItems.size === 0) return;
+        setIsBulkDeleteModalOpen(true);
+    };
+
+    const confirmBulkDelete = async () => {
+        setIsBulkDeleting(true);
+        try {
+            const idsToDelete = Array.from(selectedItems);
+            await Promise.all(idsToDelete.map(id => newsService.delete(id)));
+            setRefreshKey(prev => prev + 1);
+            setSelectedItems(new Set());
+            setIsBulkDeleteModalOpen(false);
+        } catch (error) {
+            console.error("Failed to bulk delete:", error);
+            setError("Failed to delete some items");
+        } finally {
+            setIsBulkDeleting(false);
         }
     };
 
     const filteredNews = useMemo(() => {
-        return newsList.filter(n => {
-            const matchesSearch = n.name.toLowerCase().includes(searchTerm.toLowerCase());
+        return news.filter(item => {
+            const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.description.toLowerCase().includes(searchTerm.toLowerCase());
 
+            // Filter by Month
             let matchesMonth = true;
-            let matchesYear = true;
+            if (selectedMonth) {
+                const itemDate = new Date(item.date || item.createdAt || Date.now());
+                const itemMonth = (itemDate.getMonth() + 1).toString().padStart(2, '0');
+                matchesMonth = itemMonth === selectedMonth;
+            }
 
-            if (selectedMonth || selectedYear) {
-                const date = new Date(n.createdAt);
-                if (selectedMonth) {
-                    matchesMonth = date.getMonth().toString() === selectedMonth;
-                }
-                if (selectedYear) {
-                    matchesYear = date.getFullYear().toString() === selectedYear;
-                }
+            // Filter by Year
+            let matchesYear = true;
+            if (selectedYear) {
+                const itemDate = new Date(item.date || item.createdAt || Date.now());
+                const itemYear = itemDate.getFullYear().toString();
+                matchesYear = itemYear === selectedYear;
             }
 
             return matchesSearch && matchesMonth && matchesYear;
         });
-    }, [newsList, searchTerm, selectedMonth, selectedYear]);
+    }, [news, searchTerm, selectedMonth, selectedYear]);
 
-    // Reset pagination when filters change
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, selectedMonth, selectedYear]);
-
-    // Pagination Logic
     const totalPages = Math.ceil(filteredNews.length / itemsPerPage);
     const currentItems = filteredNews.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('th-TH', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        });
-    };
 
     return (
         <div className="w-full space-y-6 pb-32">
@@ -152,254 +187,214 @@ export default function NewsPage() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSuccess={() => { setRefreshKey(prev => prev + 1); setIsModalOpen(false); }}
-                newsToEdit={selectedNews}
+                newsToEdit={selectedNewsItem}
             />
 
-            <DeleteNewsModal
+            <DeleteModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
-                onSuccess={() => {
-                    setRefreshKey(prev => prev + 1);
-                    setIsDeleteModalOpen(false);
-                    setSelectedItems(new Set()); // Clear selection after delete
-                }}
-                newsToDelete={newsToDelete}
+                onConfirm={confirmDelete}
+                title="ยืนยันการลบข่าวสาร"
+                description="คุณแน่ใจหรือไม่ที่จะลบข่าวสารนี้"
+                itemName={newsToDelete?.name || ""}
+                isDeleting={isDeleting}
             />
 
-            {/* Header */}
-            <div className="flex items-center justify-between px-1">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                        <div className="w-1.5 h-6 bg-sky-500 rounded-full" />
-                        จัดการข่าวสาร
-                    </h2>
-                </div>
-                <div className="flex gap-2">
-                    {selectedItems.size > 0 && (
-                        <button
-                            onClick={handleBulkDeleteClick}
-                            className="cursor-pointer flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-rose-500/20 transition-all animate-in fade-in"
-                        >
-                            <Trash2 size={18} />
-                            ลบที่เลือก ({selectedItems.size})
-                        </button>
-                    )}
-                    <button
-                        onClick={handleAddClick}
-                        className="cursor-pointer flex items-center gap-1.5 bg-sky-500 hover:bg-sky-600 text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold shadow-md transition-all"
+            <DeleteModal
+                isOpen={isBulkDeleteModalOpen}
+                onClose={() => setIsBulkDeleteModalOpen(false)}
+                onConfirm={confirmBulkDelete}
+                title="ยืนยันการลบหมู่"
+                description={`คุณแน่ใจหรือไม่ที่จะลบข่าวสารจำนวน ${selectedItems.size} รายการ?`}
+                itemName={`ข่าวสาร ${selectedItems.size} รายการ`}
+                isDeleting={isBulkDeleting}
+            />
+
+            {/* Headers */}
+            <PageHeader
+                title="จัดการข่าวสาร"
+                colorClass="bg-sky-500"
+                action={{
+                    label: "เพิ่มข่าวใหม่",
+                    onClick: handleAddClick
+                }}
+            >
+                {selectedItems.size > 0 && (
+                    <Button
+                        onClick={handleBulkDeleteClick}
+                        className="cursor-pointer flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-md transition-all animate-in fade-in active:scale-95"
                     >
-                        <Plus size={16} />
-                        <span className="inline sm:hidden">เพิ่ม</span>
-                        <span className="hidden sm:inline">เพิ่มข่าวสารใหม่</span>
-                    </button>
-                </div>
-            </div>
+                        <Trash2 size={16} />
+                        ลบที่เลือก ({selectedItems.size})
+                    </Button>
+                )}
+            </PageHeader>
 
-            {/* Toolbar: Search & Filters */}
-            <div className="top-0 z-30 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border border-white/20 shadow-sm rounded-2xl p-4 flex flex-col xl:flex-row justify-between items-center gap-4">
-
-                {/* Search & Filter Group */}
-                <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto flex-1">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="ค้นหาข่าวสาร..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-900 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-sky-500/50 transition-all"
-                        />
-                    </div>
-
-                    <div className="flex gap-2">
-                        <select
+            {/* Controls */}
+            <div className="bg-white dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+                    <FilterBar
+                        searchTerm={searchTerm}
+                        onSearchChange={setSearchTerm}
+                        placeholder="ค้นหา ชื่อข่าว, รายละเอียด..."
+                        className="w-full xl:w-auto mb-0"
+                    >
+                        <FilterSelect
+                            icon={<Calendar size={14} className="text-slate-400 flex-shrink-0" />}
                             value={selectedMonth}
-                            onChange={(e) => setSelectedMonth(e.target.value)}
-                            className="px-3 py-2.5 bg-slate-100 dark:bg-slate-900 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-sky-500/50 cursor-pointer min-w-[120px]"
-                        >
-                            {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                        </select>
-
-                        <select
+                            onChange={(val) => { setSelectedMonth(val); setCurrentPage(1); }}
+                            options={MONTHS}
+                            defaultLabel="ทุกเดือน"
+                            className="min-w-[120px]"
+                        />
+                        <FilterSelect
+                            icon={<Calendar size={14} className="text-slate-400 flex-shrink-0" />}
                             value={selectedYear}
-                            onChange={(e) => setSelectedYear(e.target.value)}
-                            className="px-3 py-2.5 bg-slate-100 dark:bg-slate-900 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-sky-500/50 cursor-pointer min-w-[100px]"
-                        >
-                            {years.map(y => <option key={y.value} value={y.value}>{y.label}</option>)}
-                        </select>
-
-                        {(searchTerm || selectedMonth || selectedYear) && (
-                            <button
-                                onClick={() => { setSearchTerm(""); setSelectedMonth(""); setSelectedYear(""); }}
-                                className="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-xl text-slate-500 transition-colors"
+                            onChange={(val) => { setSelectedYear(val); setCurrentPage(1); }}
+                            options={years}
+                            defaultLabel="ทุกปี"
+                            className="min-w-[100px]"
+                        />
+                        {(selectedMonth || selectedYear) && (
+                            <Button
+                                onClick={() => { setSelectedMonth(""); setSelectedYear(""); }}
+                                className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-lg text-slate-500 transition-colors"
+                                title="ล้างตัวกรอง"
                             >
-                                <X size={18} />
-                            </button>
+                                <X size={16} />
+                            </Button>
                         )}
-                    </div>
-                </div>
+                    </FilterBar>
 
-                {/* Pagination Controls */}
-                <div className="flex items-center gap-4 w-full xl:w-auto justify-between xl:justify-end">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-                        <span>แสดง:</span>
-                        <select
-                            value={itemsPerPage}
-                            onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
-                            className="bg-slate-100 dark:bg-slate-800 border-none rounded px-2 py-1 text-sky-600 outline-none cursor-pointer"
-                        >
-                            {[10, 20, 50, 100].map(val => <option key={val} value={val}>{val}</option>)}
-                        </select>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                        <button disabled={currentPage === 1} onClick={() => setCurrentPage(1)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-30 transition-colors"><ChevronsLeft size={16} /></button>
-                        <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-30 transition-colors"><ChevronLeft size={16} /></button>
-                        <span className="mx-2 text-xs font-bold text-sky-600 whitespace-nowrap">หน้า {currentPage} / {totalPages || 1}</span>
-                        <button disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(prev => prev + 1)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-30 transition-colors"><ChevronRight size={16} /></button>
-                        <button disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(totalPages)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-30 transition-colors"><ChevronsRight size={16} /></button>
-                    </div>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        itemsPerPage={itemsPerPage}
+                        totalItems={filteredNews.length}
+                        onPageChange={setCurrentPage}
+                        onItemsPerPageChange={setItemsPerPage}
+                    />
                 </div>
             </div>
 
             {/* Selection Info Bar */}
-            <div className="flex items-center gap-2 px-1">
-                <button
-                    onClick={handleSelectAll}
-                    className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-sky-600 transition-colors"
-                >
-                    {selectedItems.size === filteredNews.length && filteredNews.length > 0 ? (
-                        <CheckSquare size={18} className="text-sky-500" />
-                    ) : (
-                        <Square size={18} />
+            {filteredNews.length > 0 && (
+                <div className="flex items-center gap-2 mb-2 px-1">
+                    <Button
+                        onClick={toggleSelectAll}
+                        className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                    >
+                        {selectedItems.size === filteredNews.length && filteredNews.length > 0 ? (
+                            <CheckSquare size={18} className="text-sky-500" />
+                        ) : (
+                            <Square size={18} />
+                        )}
+                        {selectedItems.size === filteredNews.length ? "ยกเลิกเลือกทั้งหมด" : "เลือกทั้งหมด"}
+                    </Button>
+                    {selectedItems.size > 0 && (
+                        <span className="text-xs font-medium text-sky-600 bg-sky-50 dark:bg-sky-900/20 px-2 py-0.5 rounded-full">
+                            เลือกอยู่ {selectedItems.size} รายการ
+                        </span>
                     )}
-                    เลือกทั้งหมด ({filteredNews.length})
-                </button>
-                {selectedItems.size > 0 && (
-                    <span className="text-sm text-slate-400">
-                        • เลือกอยู่ {selectedItems.size} รายการ
-                    </span>
-                )}
-            </div>
-
-            {/* News Grid */}
-            {loading ? (
-                <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                    {[...Array(6)].map((_, i) => (
-                        <div key={i} className="bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
-                            <Skeleton className="aspect-[4/3] w-full" />
-                            <div className="p-3 space-y-2">
-                                <Skeleton className="h-4 w-3/4" />
-                                <Skeleton className="h-3 w-full" />
-                                <Skeleton className="h-3 w-1/2" />
-                                <div className="pt-2 mt-2 border-t border-slate-100 dark:border-slate-800 flex justify-between">
-                                    <Skeleton className="h-4 w-10" />
-                                    <div className="flex gap-1">
-                                        <Skeleton className="h-6 w-6 rounded" />
-                                        <Skeleton className="h-6 w-6 rounded" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ) : filteredNews.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-slate-400 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                    <div className="p-4 bg-white rounded-full shadow-sm mb-4">
-                        <Calendar size={32} className="text-slate-300" />
-                    </div>
-                    <p className="font-medium text-lg">ไม่พบข่าวสาร</p>
-                    <p className="text-sm">ลองปรับตัวกรอง หรือสร้างข่าวสารใหม่</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                    {currentItems.map((news) => {
-                        const isSelected = selectedItems.has(news._id);
-                        return (
-                            <div
-                                key={news._id}
-                                className={`group bg-white dark:bg-slate-900 rounded-xl overflow-hidden border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full relative ${isSelected ? 'border-sky-500 ring-1 ring-sky-500' : 'border-slate-200 dark:border-slate-800'}`}
-                            >
-                                {/* Checkbox Overlay */}
-                                <div className={`absolute top-2 left-2 z-10 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); toggleSelection(news._id); }}
-                                        className="bg-white/90 backdrop-blur rounded text-sky-600 shadow-sm hover:scale-110 transition-transform p-0.5"
-                                    >
-                                        {isSelected ? <CheckSquare size={20} className="fill-sky-50" /> : <Square size={20} />}
-                                    </button>
-                                </div>
-
-                                {/* Image Area */}
-                                <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                    {news.images && news.images.length > 0 ? (
-                                        <Image
-                                            src={news.images[0]}
-                                            alt={news.name}
-                                            fill
-                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                            sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 16vw"
-                                        />
-                                    ) : (
-                                        <div className="flex items-center justify-center h-full text-slate-300">
-                                            <Calendar size={32} />
-                                        </div>
-                                    )}
-                                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur text-slate-800 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
-                                        {formatDate(news.date)}
-                                    </div>
-                                </div>
-
-                                {/* Content Area */}
-                                <div className="p-3 flex flex-col flex-1 cursor-pointer" onClick={() => handleEditClick(news)}>
-                                    <h3 className="font-bold text-slate-800 dark:text-white mb-1 line-clamp-2 text-sm group-hover:text-sky-600 transition-colors" title={news.name}>
-                                        {news.name}
-                                    </h3>
-
-                                    <p className="text-slate-500 dark:text-slate-400 text-xs line-clamp-2 mb-3 flex-1">
-                                        {news.description || "ไม่มีรายละเอียด"}
-                                    </p>
-
-                                    {/* Footer Actions */}
-                                    <div className="pt-2 mt-auto border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1" onClick={e => e.stopPropagation()}>
-                                        {news.link ? (
-                                            <a
-                                                href={news.link}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="text-[10px] font-semibold text-sky-500 hover:text-sky-600 flex items-center gap-0.5 bg-sky-50 px-1.5 py-0.5 rounded"
-                                            >
-                                                <LinkIcon size={10} />
-                                                Link
-                                            </a>
-                                        ) : <span />}
-
-                                        <div className="flex gap-1">
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleEditClick(news); }}
-                                                className="p-1.5 text-slate-500 hover:text-sky-600 hover:bg-sky-50 rounded-md transition-all"
-                                                title="แก้ไข"
-                                            >
-                                                <Edit2 size={14} />
-                                            </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleDeleteClick(news); }}
-                                                className="p-1.5 text-slate-500 hover:text-rose-500 hover:bg-rose-50 rounded-md transition-all"
-                                                title="ลบ"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
                 </div>
             )}
-            <div className="p-4 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl flex justify-center items-center text-xs font-bold text-slate-400 uppercase tracking-widest shadow-sm">
-                <span>Total Records: {filteredNews.length}</span>
-            </div>
+
+            {/* News Grid */}
+            {
+                loading ? (
+                    <GridSkeleton count={6} />
+                ) : filteredNews.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-slate-400 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                        <div className="p-4 bg-white rounded-full shadow-sm mb-4">
+                            <Search size={32} className="text-slate-300" />
+                        </div>
+                        <p>ไม่พบข่าวสารที่ค้นหา</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                        {currentItems.map((item) => {
+                            const isSelected = selectedItems.has(item._id);
+                            return (
+                                <div
+                                    key={item._id}
+                                    className={`group h-full relative bg-white dark:bg-slate-900 rounded-xl overflow-hidden border transition-all duration-300 hover:shadow-lg flex flex-col ${isSelected
+                                        ? 'border-sky-500 ring-2 ring-sky-500/20 shadow-md'
+                                        : 'border-slate-200 dark:border-slate-800 shadow-sm hover:border-sky-200 dark:hover:border-sky-800'
+                                        }`}
+                                >
+                                    {/* Selection Checkbox Overlay */}
+                                    <div className="absolute top-2 left-2 z-20">
+                                        <Button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleSelection(item._id);
+                                            }}
+                                            className={`p-1 rounded-md transition-all ${isSelected
+                                                ? 'bg-sky-500 text-white shadow-sm'
+                                                : 'bg-white/80 backdrop-blur-sm text-slate-400 hover:bg-white hover:text-sky-500 shadow-sm opacity-0 group-hover:opacity-100'
+                                                }`}
+                                        >
+                                            {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
+                                        </Button>
+                                    </div>
+
+
+
+                                    <div className="aspect-[4/3] relative overflow-hidden bg-slate-100">
+                                        {item.images && item.images.length > 0 ? (
+                                            <Image
+                                                src={item.images[0]}
+                                                alt={item.name}
+                                                fill
+                                                className="object-cover transition-transform duration-500 group-hover:scale-110"
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full text-slate-300">
+                                                <Calendar size={32} />
+                                            </div>
+                                        )}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+                                        <div className="absolute bottom-2 left-3 right-3 text-white text-[10px] sm:text-xs font-medium truncate flex items-center gap-1">
+                                            <Calendar size={10} className="text-sky-300" />
+                                            {item.date ? new Date(item.date).toLocaleDateString('th-TH') : '-'}
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3 flex flex-col flex-grow">
+                                        <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 line-clamp-2 text-sm group-hover:text-sky-600 transition-colors h-10">
+                                            {item.name}
+                                        </h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3 h-8">
+                                            {item.description}
+                                        </p>
+
+                                        {/* Card Actions Footer */}
+                                        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
+                                            <Button
+                                                onClick={() => handleEditClick(item)}
+                                                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-sky-600 bg-sky-50 hover:bg-sky-100 dark:bg-sky-900/20 dark:hover:bg-sky-900/40 rounded-lg transition-colors"
+                                            >
+                                                <Edit2 size={12} />
+                                                แก้ไข
+                                            </Button>
+                                            <Button
+                                                onClick={() => handleDeleteClick(item)}
+                                                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/20 dark:hover:bg-rose-900/40 rounded-lg transition-colors"
+                                            >
+                                                <Trash2 size={12} />
+                                                ลบ
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )
+            }
+
+            <PaginationInfo totalItems={filteredNews.length} />
         </div>
     );
 }
