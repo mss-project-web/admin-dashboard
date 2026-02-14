@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, Save, Loader2, Image as ImageIcon, Trash2, Eye, Languages } from "lucide-react";
+import { ChevronLeft, Save, Loader2, Image as ImageIcon, Trash2, Eye, Languages, AlertCircle, Globe, PencilOff } from "lucide-react";
 import { BlogGroup, BlogContentBlock } from "@/types/blog";
 import { blogService } from "@/services/blogService";
 import { useToast } from "@/hooks/use-toast";
@@ -195,13 +195,13 @@ export default function BlogForm({
                             <Eye size={18} />
                             <span>Preview</span>
                         </Button>
-                        <button
+                        <Button
                             type="button"
                             onClick={onCancel}
                             className="flex-1 sm:flex-none px-4 py-2 text-center text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg md:rounded-xl font-bold text-sm transition-colors"
                         >
                             ยกเลิก
-                        </button>
+                        </Button>
                         <Button
                             type="submit"
                             disabled={loading}
@@ -263,8 +263,9 @@ export default function BlogForm({
                                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 transition-all font-mono text-sm"
                                 required
                             />
-                            <p className="mt-2 text-xs text-slate-400">
-                                💡 URL: <span className="text-sky-500">/blog/{slug || "..."}</span>
+                            <p className="flex items-center gap-1 mt-2 text-xs text-slate-400">
+                                <AlertCircle size={14} />
+                                URL: <span className="text-sky-500">/blog/{slug || "..."}</span>
                             </p>
                         </div>
 
@@ -328,26 +329,28 @@ export default function BlogForm({
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">สถานะ</label>
                                 <div className="flex gap-2">
-                                    <button
+                                    <Button
                                         type="button"
                                         onClick={() => setStatus('draft')}
-                                        className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all ${status === 'draft'
+                                        className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${status === 'draft'
                                             ? 'bg-amber-100 text-amber-700 border-2 border-amber-400 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-600'
                                             : 'bg-slate-50 text-slate-500 border-2 border-transparent hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-400'
                                             }`}
                                     >
-                                        📝 Draft
-                                    </button>
-                                    <button
+                                        <PencilOff size={16} />
+                                        Draft
+                                    </Button>
+                                    <Button
                                         type="button"
                                         onClick={() => setStatus('published')}
-                                        className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all ${status === 'published'
+                                        className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${status === 'published'
                                             ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-400 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-600'
                                             : 'bg-slate-50 text-slate-500 border-2 border-transparent hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-400'
                                             }`}
                                     >
-                                        🌐 Published
-                                    </button>
+                                        <Globe size={16} />
+                                        Published
+                                    </Button>
                                 </div>
                                 <p className="mt-1.5 text-[10px] text-slate-400">
                                     {status === 'draft' ? 'บทความจะยังไม่แสดงบนหน้าเว็บ' : 'บทความจะแสดงบนหน้าเว็บทันที'}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Plus } from "lucide-react";
+import { X, Plus, AlertCircle } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 
 interface TagInputProps {
@@ -77,8 +77,9 @@ export default function TagInput({ tags, onChange, placeholder = "พิมพ�
             )}
 
             {/* Helper Text */}
-            <p className="text-xs text-slate-400">
-                💡 กด Enter หรือคลิก "เพิ่ม" เพื่อเพิ่ม tag
+            <p className="flex items-center gap-1 text-xs text-slate-400">
+                <AlertCircle size={14} />
+                กด Enter หรือคลิก "เพิ่ม" เพื่อเพิ่ม tag
             </p>
         </div>
     );

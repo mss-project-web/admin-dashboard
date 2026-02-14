@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { userService } from '@/services/userService';
-import { Loader2, Edit2, UserPlus, X, Eye, EyeOff, Lock, Check, AlertCircle } from 'lucide-react';
+import { Loader2, Edit2, UserPlus, X, Eye, EyeOff, Lock, AlertCircle } from 'lucide-react';
 import { User, UserRole } from '@/types/user';
 import { Button } from "@/app/components/ui/button";
 import { toastUtils } from "@/lib/toast";

@@ -33,5 +33,10 @@ export const activityService = {
     delete: async (id: string) => {
         const response = await api.delete(`/activities/${id}`);
         return response.data;
+    },
+
+    getRoadmap: async () => {
+        const response = await api.get('/activities/roadmap');
+        return response.data.data?.data || response.data.data || [];
     }
 };

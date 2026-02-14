@@ -448,13 +448,13 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                                                     className="object-cover"
                                                     sizes="128px"
                                                 />
-                                                <button
+                                                <Button
                                                     type="button"
                                                     onClick={() => handleImageRemove(idx)}
                                                     className="absolute top-1 right-1 bg-white/80 hover:bg-red-500 hover:text-white text-slate-500 p-1 rounded-full transition-all shadow-sm"
                                                 >
                                                     <X size={12} />
-                                                </button>
+                                                </Button>
                                                 {isFile && (
                                                     <div className="absolute bottom-0 left-0 right-0 bg-sky-500/80 text-white text-[10px] px-1 py-0.5 text-center truncate">
                                                         New Upload
@@ -489,10 +489,25 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                                                 onChange={e => handleArrayChange('objectives', idx, e.target.value)}
                                                 placeholder={`วัตถุประสงค์ข้อที่ ${idx + 1}`}
                                             />
-                                            <button type="button" onClick={() => removeArrayItem('objectives', idx)} className="text-slate-400 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => removeArrayItem('objectives', idx)}
+                                                className="text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                            >
+                                                <Trash2 size={16} />
+                                            </Button>
                                         </div>
                                     ))}
-                                    <button type="button" onClick={() => addArrayItem('objectives')} className="text-xs text-sky-500 font-bold hover:underline">+ เพิ่มรายการ</button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={() => addArrayItem('objectives')}
+                                        className="text-xs text-sky-500 font-bold hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/20"
+                                    >
+                                        + เพิ่มรายการ
+                                    </Button>
                                 </div>
 
                                 <div className="space-y-2">
@@ -505,10 +520,25 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                                                 onChange={e => handleArrayChange('goals', idx, e.target.value)}
                                                 placeholder={`เป้าหมายข้อที่ ${idx + 1}`}
                                             />
-                                            <button type="button" onClick={() => removeArrayItem('goals', idx)} className="text-slate-400 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => removeArrayItem('goals', idx)}
+                                                className="text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                            >
+                                                <Trash2 size={16} />
+                                            </Button>
                                         </div>
                                     ))}
-                                    <button type="button" onClick={() => addArrayItem('goals')} className="text-xs text-sky-500 font-bold hover:underline">+ เพิ่มรายการ</button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={() => addArrayItem('goals')}
+                                        className="text-xs text-sky-500 font-bold hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/20"
+                                    >
+                                        + เพิ่มรายการ
+                                    </Button>
                                 </div>
                             </div>
                         </form>
@@ -529,7 +559,7 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                         form="activity-form"
                         type="submit"
                         disabled={isLoading || isFetchingDetail}
-                        className={isEditMode ? 'text-white bg-sky-500 hover:bg-sky-600' : 'text-whitebg-emerald-500 hover:bg-emerald-600'}
+                        className={isEditMode ? 'text-white bg-sky-500 hover:bg-sky-600' : 'text-white bg-emerald-500 hover:bg-emerald-600'}
                     >
                         {isLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
                         {isEditMode ? 'บันทึกการแก้ไข' : 'สร้างกิจกรรม'}

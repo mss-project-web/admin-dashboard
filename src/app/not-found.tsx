@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Home, ArrowLeft } from "lucide-react";
+import { Button } from "./components/ui/button";
 
 export default function NotFound() {
     return (
@@ -46,7 +47,7 @@ export default function NotFound() {
                         กลับหน้าแรก
                     </Link>
 
-                    <button
+                    <Button
                         onClick={() => window.history.back()}
                         className="inline-flex items-center justify-center gap-2 
                             rounded-xl cursor-pointer
@@ -60,7 +61,7 @@ export default function NotFound() {
                     >
                         <ArrowLeft className="h-5 w-5" />
                         ย้อนกลับ
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Footer Note */}

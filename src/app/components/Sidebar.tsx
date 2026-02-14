@@ -24,6 +24,7 @@ const menuItems = [
         icon: Settings, label: "ตั้งค่าเว็บหลัก",
         subItems: [
             { label: "จัดการกิจกรรม", href: "/admin/activity" },
+            { label: "ปฏิทินกิจกรรม", href: "/admin/activity/calendar" },
             { label: "จัดการห้องละหมาด", href: "/admin/prayer-rooms" },
             { label: "จัดการข่าวสาร", href: "/admin/news" },
         ]
