@@ -6,6 +6,7 @@ import BottomNav from "@/app/components/BottomNav";
 import { Menu, LogOut, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { authApi } from "@/lib/api/auth";
+import { ThemeToggle } from "@/app/components/ThemeToggle";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -93,6 +94,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 </div>
                             )}
                         </div>
+                        <ThemeToggle />
+
                     </div>
                 </header>
 

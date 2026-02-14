@@ -149,6 +149,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                                         <input
                                             type="tel"
                                             value={phoneNumber}
+                                            maxLength={10}
                                             onChange={(e) => setPhoneNumber(e.target.value)}
                                             className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500 transition-all"
                                             placeholder="0xx-xxx-xxxx"

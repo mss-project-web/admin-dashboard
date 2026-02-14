@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Anuphan } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/app/components/ui/toaster";
+import { Providers } from "@/app/components/providers";
 
 
 const anuphan = Anuphan({
@@ -21,15 +22,9 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "MSS - Admin dashboard",
   description: "MSS - Admin dashboard",
-  manifest: "/manifest.json",
   icons: {
     icon: "/icon.svg",
     apple: "/icon.svg",
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "MSS-Admin",
   },
 };
 
@@ -39,12 +34,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${anuphan.variable} antialiased`}
       >
-        {children}
-        <Toaster />
+        <Providers>
+          {children}
+          <Toaster />
+        </Providers>
       </body>
     </html>
   );

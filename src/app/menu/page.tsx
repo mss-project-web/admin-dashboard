@@ -1,13 +1,14 @@
 "use client"
 
 import Link from "next/link";
-import { LayoutDashboard, FileText, Settings, Clock, Box, LogOut } from "lucide-react";
+import { LayoutDashboard, FileText, Settings, Clock, Box, LogOut, Star, Newspaper, Hourglass } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api/auth";
 import { systemApi } from "@/lib/api/system";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import { ThemeToggle } from "@/app/components/ThemeToggle";
 
 export default function MenuPage() {
     const router = useRouter();
@@ -81,17 +82,17 @@ export default function MenuPage() {
                                 <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base max-w-2xl leading-relaxed">
                                     ระบบจัดการหลังบ้านแบบครบวงจร <span className="text-sky-500 font-medium">เลือกเมนูที่คุณต้องการ</span> เพื่อเริ่มต้นทำงานได้อย่างรวดเร็ว
                                 </p>
-
-                                <div className="flex items-center gap-2 text-xs md:text-sm">
+                                <div className="flex items-center justify-center md:justify-start gap-2 text-xs md:text-sm w-full">
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full border border-slate-200 dark:border-slate-700">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> {/* จุดสีเขียวบอกสถานะ Online */}
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                                         {user?.firstName} {user?.lastName}
                                     </div>
+                                    <ThemeToggle />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex justify-center md:justify-end mt-4 lg:mt-0">
+                        <div className="flex justify-center md:justify-end mt-4 lg:mt-0 gap-2">
                             <button
                                 onClick={handleLogout}
                                 className="
@@ -135,15 +136,33 @@ export default function MenuPage() {
                             },
                             {
                                 id: "03",
-                                icon: Settings,
-                                title: "จัดการเว็บหลัก",
-                                desc: "จัดการกิจกิจกรรม ห้องละหมาด และข่าวสาร",
+                                icon: Star,
+                                title: "จัดการกิจกรรม",
+                                desc: "จัดการกิจกิจกรรม",
                                 href: "/admin/activity",
                                 color: "group-hover:text-blue-500",
                                 iconBg: "group-hover:bg-blue-500",
                             },
                             {
                                 id: "04",
+                                icon: Newspaper,
+                                title: "จัดการข่าวสาร",
+                                desc: "จัดการข่าวสารและประชาสัมพันธ์",
+                                href: "/admin/news",
+                                color: "group-hover:text-sky-500",
+                                iconBg: "group-hover:bg-sky-500",
+                            },
+                            {
+                                id: "05",
+                                icon: Hourglass,
+                                title: "จัดการห้องละหมาด",
+                                desc: "จัจัดการห้องละหมาด",
+                                href: "/admin/prayer-rooms",
+                                color: "group-hover:text-blue-500",
+                                iconBg: "group-hover:bg-blue-500",
+                            },
+                            {
+                                id: "06",
                                 icon: Clock,
                                 title: "ตารางเวลาละหมาด",
                                 desc: "แสดงข้อมูลเวลาละหมาดประจำวันอย่างถูกต้องและเป็นปัจจุบัน",
@@ -152,7 +171,7 @@ export default function MenuPage() {
                                 iconBg: "group-hover:bg-sky-500",
                             },
                             {
-                                id: "05",
+                                id: "07",
                                 icon: Box,
                                 title: "ระบบบริหารสต๊อก",
                                 desc: "ตรวจสอบข้อมูลและสถานะคงเหลือของสิ่งของในคลัง",

@@ -128,6 +128,7 @@ export default function ProfilePage() {
                             <input
                                 type="tel"
                                 value={phoneNumber}
+                                maxLength={10}
                                 onChange={(e) => setPhoneNumber(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-sky-500/50 transition-all"
                                 placeholder="0xx-xxx-xxxx"
