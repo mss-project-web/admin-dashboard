@@ -19,7 +19,11 @@ let cachedAuth: Auth | null = null;
 function createApp(): App {
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    // Fix common Vercel formatting issues with Private Keys (removes quotes and parses newlines)
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    if (privateKey) {
+        privateKey = privateKey.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+    }
 
     if (!projectId || !clientEmail || !privateKey) {
         throw new Error(
