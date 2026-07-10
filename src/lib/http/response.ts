@@ -78,7 +78,12 @@ export function handle(
                 return failBody(err.message, err.statusCode);
             }
             console.error('[api] unhandled error:', err);
-            return failBody('Internal server error', 500);
+            // TEMP DEBUG: surface the real error to diagnose the Vercel 500.
+            const detail =
+                err instanceof Error
+                    ? `${err.name}: ${err.message} :: ${(err.stack || '').split('\n').slice(1, 3).join(' | ')}`
+                    : String(err);
+            return failBody(`Internal server error [DEBUG] ${detail}`, 500);
         }
     };
 }
