@@ -1,6 +1,7 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import { logMutation } from './systemLogging';
 
 /**
  * Response envelope compatible with the previous NestJS backend:
@@ -57,9 +58,13 @@ export function handle(
         try {
             const res = await fn(req, ctx);
             // Auto-log successful mutations (replaces the old SystemLogInterceptor).
-            const params = ctx?.params ? await ctx.params.catch(() => undefined) : undefined;
-            const { logMutation } = await import('./systemLogging');
-            await logMutation(req, params, res.status);
+            // Logging must never break the actual response.
+            try {
+                const params = ctx?.params ? await ctx.params.catch(() => undefined) : undefined;
+                await logMutation(req, params, res.status);
+            } catch (logErr) {
+                console.error('[api] auto-log failed:', logErr);
+            }
             return res;
         } catch (err) {
             if (err instanceof ZodError) {
