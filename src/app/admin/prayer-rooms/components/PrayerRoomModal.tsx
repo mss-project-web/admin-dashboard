@@ -7,6 +7,17 @@ import { prayerRoomService } from "@/services/prayerRoomService";
 import Image from "next/image";
 import { Button } from "@/app/components/ui/button";
 import { toastUtils } from "@/lib/toast";
+import dynamic from "next/dynamic";
+
+// Leaflet touches `window`, so load the picker client-side only.
+const MapPicker = dynamic(() => import("./MapPicker"), {
+    ssr: false,
+    loading: () => (
+        <div className="h-72 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 animate-pulse flex items-center justify-center text-sm text-slate-400">
+            กำลังโหลดแผนที่...
+        </div>
+    ),
+});
 
 interface PrayerRoomModalProps {
     isOpen: boolean;
@@ -205,6 +216,15 @@ export default function PrayerRoomModal({ isOpen, onClose, onSuccess, prayerRoom
         }));
     };
 
+    // Bridge between the string form fields and the map picker (numeric).
+    const latNum = formData.locationLat !== "" ? parseFloat(formData.locationLat) : NaN;
+    const lngNum = formData.locationLng !== "" ? parseFloat(formData.locationLng) : NaN;
+    const validLat = !isNaN(latNum) ? latNum : null;
+    const validLng = !isNaN(lngNum) ? lngNum : null;
+    const handleMapChange = (lat: number, lng: number) => {
+        setFormData(prev => ({ ...prev, locationLat: lat.toFixed(6), locationLng: lng.toFixed(6) }));
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -276,7 +296,15 @@ export default function PrayerRoomModal({ isOpen, onClose, onSuccess, prayerRoom
                                 />
                             </div>
 
-                            {/* Location & Contact */}
+                            {/* Location on Map */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    ตำแหน่งบนแผนที่ <span className="text-xs font-normal text-slate-500">(คลิกเพื่อปักหมุด)</span>
+                                </label>
+                                <MapPicker lat={validLat} lng={validLng} onChange={handleMapChange} />
+                            </div>
+
+                            {/* Manual coordinates (auto-filled from the map) + phone */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>

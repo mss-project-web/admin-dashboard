@@ -1,59 +1,39 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { User, UserRole } from "@/types/user";
+import { getSessionCookie } from "@/lib/auth/cookies";
+import { verifySession } from "@/lib/auth/firebase";
+import { accountRepo } from "@/lib/repositories/accountRepo";
+import { User } from "@/types/user";
 
-function parseJwtServer(token: string) {
+/** Current user from the Firebase session cookie (server components/actions). */
+export async function getSession(): Promise<User | null> {
+    const cookie = await getSessionCookie();
+    if (!cookie) return null;
+
     try {
-        const parts = token.split('.');
-        if (parts.length !== 3) return null;
-        
-        const base64Url = parts[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const buffer = Buffer.from(base64, 'base64');
-        const jsonPayload = buffer.toString('utf-8');
+        const { uid, role, email } = await verifySession(cookie);
 
-        return JSON.parse(jsonPayload);
-    } catch (e) {
+        let firstName = "Admin";
+        let lastName = "";
+        let phoneNumber = "";
+        try {
+            const acc = (await accountRepo.findOne(uid)) as unknown as Partial<User>;
+            firstName = acc.firstName ?? firstName;
+            lastName = acc.lastName ?? lastName;
+            phoneNumber = acc.phoneNumber ?? phoneNumber;
+        } catch {
+            /* profile doc missing — fall back to token claims */
+        }
+
+        return {
+            _id: uid,
+            role,
+            email: email || "",
+            firstName,
+            lastName,
+            phoneNumber,
+        } as User;
+    } catch {
         return null;
     }
-}
-
-export async function getSession(): Promise<User | null> {
-    const cookieStore = await cookies();
-    
-    const tokenCookie = cookieStore.get("access_token") || cookieStore.get("token") || cookieStore.get("jwt");
-    
-    let token = tokenCookie?.value;
-
-    if (!token) {
-        const allCookies = cookieStore.getAll();
-        for (const c of allCookies) {
-            if (c.value && c.value.split('.').length === 3) {
-                token = c.value;
-                break;
-            }
-        }
-    }
-
-    if (token) {
-        const payload = parseJwtServer(token);
-        if (payload) {
-             const userId = payload.sub || payload._id || payload.id;
-             const userRole = payload.role as UserRole;
-
-             if (userId && userRole) {
-                 return {
-                     _id: userId,
-                     role: userRole,
-                     firstName: 'Admin',
-                     lastName: '',
-                     email: payload.email || '',
-                     phoneNumber: ''
-                 } as User;
-             }
-        }
-    }
-
-    return null;
 }
