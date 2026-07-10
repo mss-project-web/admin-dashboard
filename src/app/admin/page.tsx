@@ -32,7 +32,7 @@ export default function AdminDashboard() {
         ];
 
         if (isSuperAdmin) {
-          promises.push(dashboardApi.getCloudflareAnalytics());
+          promises.push(dashboardApi.getCloudflareAnalytics().catch(() => null));
         }
 
         const results = await Promise.all(promises);

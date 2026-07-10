@@ -27,6 +27,7 @@ type ActivityRaw = {
     description?: string;
     favorite?: boolean;
     images?: string[];
+    slug?: string;
     start_date?: string | null;
     end_date?: string | null;
     [k: string]: unknown;
@@ -36,6 +37,7 @@ type ActivityRaw = {
 function toListItem(a: ActivityRaw & { _id: string }) {
     return {
         _id: a._id,
+        slug: a.slug || a._id,
         name_th: a.name_th,
         name_eng: a.name_eng,
         location: a.location,
@@ -49,9 +51,43 @@ function ts(d?: Date | null) {
     return d ? Timestamp.fromDate(d) : null;
 }
 
+/**
+ * Build a URL slug from the English name (preferred) or the Thai name.
+ * Thai characters are valid in URLs and good for SEO, so we keep them.
+ */
+function slugify(nameEng?: string, nameTh?: string, fallback = ''): string {
+    const src = nameEng && /[a-zA-Z]/.test(nameEng) ? nameEng : nameTh || '';
+    const slug = src
+        .toLowerCase()
+        .trim()
+        .replace(/[^฀-๿a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    return slug || fallback;
+}
+
+async function isSlugTaken(slug: string, excludeId?: string): Promise<boolean> {
+    const snap = await col(COLLECTION).where('slug', '==', slug).limit(2).get();
+    return snap.docs.some((d) => d.id !== excludeId);
+}
+
+/** Resolve an activity by Firestore doc id first, then by slug. */
+async function resolve(idOrSlug: string) {
+    const direct = await col(COLLECTION).doc(idOrSlug).get();
+    if (direct.exists) return direct;
+    const q = await col(COLLECTION).where('slug', '==', idOrSlug).limit(1).get();
+    return q.empty ? null : q.docs[0];
+}
+
 export const activityRepo = {
     async create(fields: ActivityFields, images: string[]) {
-        const ref = await col(COLLECTION).add({
+        const ref = col(COLLECTION).doc(); // pre-generate id for slug fallback
+
+        let slug = slugify(fields.name_eng, fields.name_th, ref.id);
+        if (await isSlugTaken(slug)) slug = `${slug}-${ref.id.slice(0, 6)}`;
+
+        await ref.set({
             name_th: fields.name_th,
             name_eng: fields.name_eng,
             location: fields.location,
@@ -64,6 +100,7 @@ export const activityRepo = {
             start_date: ts(fields.start_date),
             end_date: ts(fields.end_date),
             favorite: fields.favorite ?? false,
+            slug,
             images,
             views: 0,
             ...timestamps(),
@@ -76,12 +113,11 @@ export const activityRepo = {
         return snap.docs.map((d) => toListItem(mapDoc<ActivityRaw>(d)));
     },
 
-    async findOne(id: string, incrementView = false) {
-        const ref = col(COLLECTION).doc(id);
-        if (incrementView) await ref.update({ views: FieldValue.increment(1) }).catch(() => undefined);
-        const snap = await ref.get();
-        if (!snap.exists) throw NotFound('Activity not found');
-        return mapDoc(snap);
+    async findOne(idOrSlug: string, incrementView = false) {
+        const doc = await resolve(idOrSlug);
+        if (!doc) throw NotFound('Activity not found');
+        if (incrementView) await doc.ref.update({ views: FieldValue.increment(1) }).catch(() => undefined);
+        return mapDoc(await doc.ref.get());
     },
 
     async update(id: string, fields: ActivityFields, newImages: string[] = [], deleteImages: string[] = []) {

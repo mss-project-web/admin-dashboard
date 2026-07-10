@@ -71,7 +71,8 @@ export async function getCloudflareAnalytics() {
     const apiToken = process.env.CF_API_TOKEN;
     const zoneId = process.env.CF_ZONE_ID;
     if (!apiToken || !zoneId) {
-        throw new ApiError('Cloudflare API Token or Zone ID is missing in environment variables', 500);
+        console.warn('Cloudflare API Token or Zone ID is missing in environment variables. Returning empty analytics.');
+        return { totalRequests: 0, totalPageViews: 0, totalUniqueVisitors: 0 };
     }
 
     let totalRequests = 0;

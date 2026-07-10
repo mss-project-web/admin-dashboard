@@ -61,9 +61,14 @@ export default function MapPicker({ lat, lng, onChange }: MapPickerProps) {
         markerRef.current = marker;
 
         // The modal animates in, so the container size isn't final on first paint.
-        setTimeout(() => map.invalidateSize(), 150);
+        const timer = setTimeout(() => {
+            if (mapRef.current && mapEl.current) {
+                mapRef.current.invalidateSize();
+            }
+        }, 150);
 
         return () => {
+            clearTimeout(timer);
             map.remove();
             mapRef.current = null;
             markerRef.current = null;

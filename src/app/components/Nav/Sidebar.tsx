@@ -1,6 +1,6 @@
 "use client";
 import {
-    LayoutDashboard, Settings, FileText, Users, Logs,
+    LayoutDashboard, Settings, FileText, Users, Logs, HeartHandshake,
     LogOut, ChevronLeft, ChevronRight, ChevronDown, User as UserIcon
 } from "lucide-react";
 import Link from "next/link";
@@ -29,6 +29,7 @@ const menuItems = [
             { label: "จัดการข่าวสาร", href: "/admin/news" },
         ]
     },
+    { icon: HeartHandshake, label: "ติดต่อ & บริจาค", href: "/admin/settings" },
     { icon: Users, label: "จัดการผู้ใช้", href: "/admin/users", roles: ['superadmin'] },
     { icon: Logs, label: "System Logs", href: "/admin/log", roles: ['superadmin'] },
 ];
