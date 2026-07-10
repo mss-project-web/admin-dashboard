@@ -8,6 +8,7 @@ import { toastUtils } from "@/lib/toast";
 import Image from "next/image";
 import logo from "../../../../public/Image/LOGO-MSS.png";
 import { Eye, EyeOff } from "lucide-react";
+import { ThemeToggle } from "@/app/components/ThemeToggle";
 
 import { Suspense } from "react";
 
@@ -162,7 +163,7 @@ function LoginForm() {
             deleteSecCookie(ATTEMPTS_KEY);
             deleteSecCookie(LOCKOUT_KEY);
 
-            toastUtils.success("ยินดีต้อนรับ", "เข้าสู่ระบบสำเร็จ");
+            toastUtils.success("ยินดีต้อนรับ", "เข้าสู่ระบบสำเร็จ", { duration: 2000 });
 
             // Allow toast to show briefly or just push (Next.js toast usually persists across simple push if layout doesn't unmount toaster)
             router.push("/menu");
@@ -213,7 +214,7 @@ function LoginForm() {
                     </div>
 
                     <h2 className="mt-6 text-3xl font-black text-sky-500 dark:text-sky-400 tracking-tight">
-                        MSS <span className="text-slate-900 dark:text-white"> Admin</span>
+                        MSS <span className="text-slate-900 dark:text-white"> Admin</span> <ThemeToggle />
                     </h2>
 
                     <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">

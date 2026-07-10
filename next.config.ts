@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 
+
 const nextConfig: NextConfig = {
   // `/api/*` is now served by this app's own Route Handlers (backend merged in),
   // so the old rewrite to the standalone NestJS backend is removed.

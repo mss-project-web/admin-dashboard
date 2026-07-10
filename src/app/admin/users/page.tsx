@@ -3,8 +3,9 @@ import { useState, useMemo, useEffect } from "react";
 import {
     Plus, Search, Edit2, Trash2,
     ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-    ArrowUpDown, Mail, Phone, Download, Loader2
+    ArrowUpDown, Mail, Phone
 } from "lucide-react";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/hooks/useAuth";
 import UserModal from "./components/UserModal";
@@ -94,9 +95,10 @@ export default function UsersPage() {
         setSortConfig({ key, direction });
     };
 
-    if (authLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
+    // Unified loading state
+    const isPageLoading = authLoading || loading;
 
-    if (!isSuperAdmin) return <div className="p-8 text-center text-red-500 font-bold">คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (Superadmin Only)</div>;
+    if (!authLoading && !isSuperAdmin) return <div className="p-8 text-center text-red-500 font-bold">คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (Superadmin Only)</div>;
 
     return (
         <div className="w-full space-y-4 pb-32">
@@ -127,12 +129,6 @@ export default function UsersPage() {
                     </h2>
                 </div>
                 <div className="flex gap-2">
-                    <button className="cursor-pointer flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-all">
-                        <Download size={14} />
-                        <span className="inline sm:hidden">Export</span>
-                        <span className="hidden sm:inline">Export</span>
-                    </button>
-
                     <button
                         onClick={handleAddClick}
                         className="cursor-pointer flex items-center gap-1.5 bg-sky-500 hover:bg-sky-600 text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold shadow-md transition-all active:scale-95"
@@ -210,12 +206,32 @@ export default function UsersPage() {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : loading ? (
-                                <tr>
-                                    <td colSpan={6} className="text-center py-10 text-slate-400">
-                                        <Loader2 className="animate-spin inline mr-2" /> กำลังโหลดข้อมูล...
-                                    </td>
-                                </tr>
+                            ) : isPageLoading ? (
+                                [...Array(6)].map((_, i) => (
+                                    <tr key={i} className="bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <Skeleton className="h-9 w-9 rounded-full" />
+                                                <div className="space-y-1">
+                                                    <Skeleton className="h-4 w-24" />
+                                                    <Skeleton className="h-3 w-16" />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 space-y-1">
+                                            <Skeleton className="h-3 w-32" />
+                                            <Skeleton className="h-3 w-24" />
+                                        </td>
+                                        <td className="px-6 py-4 text-center"><Skeleton className="h-6 w-20 mx-auto rounded" /></td>
+                                        <td className="px-6 py-4 text-center"><Skeleton className="h-4 w-28 mx-auto" /></td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <Skeleton className="h-8 w-8 rounded-lg" />
+                                                <Skeleton className="h-8 w-8 rounded-lg" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
                             ) : currentItems.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="text-center py-10 text-slate-400">ไม่พบข้อมูลผู้ใช้งาน</td>

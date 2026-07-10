@@ -19,6 +19,7 @@ export const toastUtils = {
             variant: "destructive",
             title,
             description,
+            className: "bg-red-500 text-white border-none",
             duration: options?.duration,
         });
     },
@@ -31,9 +32,9 @@ export const toastUtils = {
             duration: options?.duration,
         });
     },
-    
+
     warning: (title: string, description: string, options?: ToastOptions) => {
-         toast({
+        toast({
             title,
             description,
             className: "bg-amber-500 text-white border-none",

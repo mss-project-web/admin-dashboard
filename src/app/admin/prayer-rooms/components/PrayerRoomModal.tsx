@@ -7,6 +7,7 @@ import { prayerRoomService } from "@/services/prayerRoomService";
 import Image from "next/image";
 import { Button } from "@/app/components/ui/button";
 import { toastUtils } from "@/lib/toast";
+import { handleApiError } from "@/lib/axios";
 import dynamic from "next/dynamic";
 
 // Leaflet touches `window`, so load the picker client-side only.
@@ -124,15 +125,18 @@ export default function PrayerRoomModal({ isOpen, onClose, onSuccess, prayerRoom
             const location: [number, number] = [isNaN(lat) ? 0 : lat, isNaN(lng) ? 0 : lng];
 
             if (isEditMode && prayerRoomToEdit) {
-                // Update: Use JSON Body
-                const jsonPayload = {
+                // Update: Use FormData via Service
+                const existingUrls = formData.images.filter(img => typeof img === 'string') as string[];
+                const newImages = formData.images.filter(img => img instanceof File) as File[];
+                const deletedImageUrls = prayerRoomToEdit.images?.filter(url => !existingUrls.includes(url)) || [];
+
+                const payload = {
                     name: formData.name,
                     place: formData.place,
                     detail: formData.detail,
                     faculty: formData.faculty,
                     location: location,
                     openingHours: formData.openingHours,
-                    images: formData.images.filter(img => typeof img === 'string'), // Only existing URLs
                     youtube_url: formData.youtube_url,
                     capacity: formData.capacity,
                     google_map_url: formData.google_map_url,
@@ -140,7 +144,7 @@ export default function PrayerRoomModal({ isOpen, onClose, onSuccess, prayerRoom
                     phone: formData.phone
                 };
 
-                await prayerRoomService.update(prayerRoomToEdit._id, jsonPayload);
+                await prayerRoomService.update(prayerRoomToEdit._id, payload, newImages, deletedImageUrls);
                 toastUtils.success("สำเร็จ", "แก้ไขข้อมูลห้องละหมาดเรียบร้อยแล้ว");
 
             } else {
@@ -175,9 +179,13 @@ export default function PrayerRoomModal({ isOpen, onClose, onSuccess, prayerRoom
             }
             onSuccess();
             onClose();
+
+
+            // ... existing imports
+
         } catch (err: any) {
             console.error(err);
-            toastUtils.error("เกิดข้อผิดพลาด", err.message || "Something went wrong");
+            toastUtils.error("เกิดข้อผิดพลาด", handleApiError(err));
         } finally {
             setIsLoading(false);
         }
@@ -228,7 +236,7 @@ export default function PrayerRoomModal({ isOpen, onClose, onSuccess, prayerRoom
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animation-fade-in">
+        <div className="fixed inset-0 z-[9990] flex items-center m-0 justify-center bg-black/50 backdrop-blur-sm p-4 animation-fade-in">
             <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden transform transition-all scale-100">
 
                 {/* Header */}
@@ -335,6 +343,7 @@ export default function PrayerRoomModal({ isOpen, onClose, onSuccess, prayerRoom
                                     <input
                                         className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-sans"
                                         value={formData.phone}
+                                        maxLength={10}
                                         onChange={e => setFormData({ ...formData, phone: e.target.value })}
                                         placeholder="094-xxxxxxx"
                                     />
@@ -456,7 +465,7 @@ export default function PrayerRoomModal({ isOpen, onClose, onSuccess, prayerRoom
                         form="prayer-room-form"
                         type="submit"
                         disabled={isLoading || isFetchingDetail}
-                        className={isEditMode ? 'bg-sky-500 hover:bg-sky-600' : 'bg-emerald-500 hover:bg-emerald-600'}
+                        className={isEditMode ? 'text-white bg-sky-500 hover:bg-sky-600' : 'text-white bg-emerald-500 hover:bg-emerald-600'}
                     >
                         {isLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
                         {isEditMode ? 'บันทึกการแก้ไข' : 'สร้างห้องละหมาด'}

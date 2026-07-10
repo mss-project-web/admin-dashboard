@@ -7,6 +7,7 @@ import { activityService } from "@/services/activityService";
 import Image from "next/image";
 import { Button } from "@/app/components/ui/button";
 import { toastUtils } from "@/lib/toast";
+import { handleApiError } from "@/lib/axios";
 
 interface ActivityModalProps {
     isOpen: boolean;
@@ -20,6 +21,7 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
     const isEditMode = !!activityToEdit;
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingDetail, setIsFetchingDetail] = useState(false);
+    const [originalImages, setOriginalImages] = useState<string[]>([]); // To track initial images for deletion logic
 
     // Form States - Using a local type allowing mixed image types
     const [formData, setFormData] = useState<{
@@ -58,6 +60,55 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                 setIsFetchingDetail(true);
                 activityService.getById(activityToEdit._id)
                     .then((data) => {
+                        const loadedImages = data.images || [];
+                        setOriginalImages(loadedImages);
+
+                        // Helper to clean potential double-serialized arrays (e.g. '["test"]')
+                        const cleanArray = (arr: string[] | undefined) => {
+                            if (!arr) return [""];
+                            return arr.map(item => {
+                                if (typeof item === 'string' && item.startsWith('[') && item.endsWith(']')) {
+                                    try {
+                                        const parsed = JSON.parse(item);
+                                        return Array.isArray(parsed) ? parsed[0] : parsed;
+                                    } catch (e) {
+                                        return item;
+                                    }
+                                }
+                                return item;
+                            }).map(item => item.replace(/^\["|"?]$/g, '').replace(/^"|"$/g, '').replace(/\\"/g, '"'));
+                            // The user's example: "[\"test 1\""
+                            // Removing `["` at start and `"]` at end, then quotes.
+                        };
+
+                        // Actually, looking at the user's input:
+                        // "objectives": [ "[\"test 1\"", "\"test 2\"]" ]
+                        // It seems the original array `["test 1", "test 2"]` was stringified to `'["test 1","test 2"]'`
+                        // Then that STRING was split by comma?
+                        // `["test 1"`  and `"test 2"]` 
+                        // If we join them back and parse?
+                        // `data.objectives.join(',')` -> `'["test 1","test 2"]'` -> JSON.parse -> `["test 1", "test 2"]`
+
+                        let cleanObjectives = data.objectives || [""];
+                        let cleanGoals = data.goals || [""];
+
+                        try {
+                            if (cleanObjectives.length > 0 && cleanObjectives[0].startsWith('[')) {
+                                const combined = cleanObjectives.join(',');
+                                const parsed = JSON.parse(combined);
+                                if (Array.isArray(parsed)) cleanObjectives = parsed;
+                            }
+                        } catch (e) { console.warn("Failed to auto-fix objectives", e); }
+
+                        try {
+                            if (cleanGoals.length > 0 && cleanGoals[0].startsWith('[')) {
+                                const combined = cleanGoals.join(',');
+                                const parsed = JSON.parse(combined);
+                                if (Array.isArray(parsed)) cleanGoals = parsed;
+                            }
+                        } catch (e) { console.warn("Failed to auto-fix goals", e); }
+
+
                         setFormData({
                             name_th: data.name_th,
                             name_eng: data.name_eng,
@@ -67,9 +118,9 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                             duration: data.duration || 0,
                             start_date: data.start_date ? new Date(data.start_date).toISOString().slice(0, 16) : "",
                             end_date: data.end_date ? new Date(data.end_date).toISOString().slice(0, 16) : "",
-                            images: data.images || [],
-                            objectives: data.objectives?.length ? data.objectives : [""],
-                            goals: data.goals?.length ? data.goals : [""],
+                            images: loadedImages,
+                            objectives: cleanObjectives.length ? cleanObjectives : [""],
+                            goals: cleanGoals.length ? cleanGoals : [""],
                             favorite: data.favorite
                         });
                     })
@@ -80,6 +131,7 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                     .finally(() => setIsFetchingDetail(false));
             } else {
                 // Reset for create
+                setOriginalImages([]);
                 setFormData({
                     name_th: "",
                     name_eng: "",
@@ -120,9 +172,12 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
             }
 
             if (isEditMode && activityToEdit) {
-                // Update: Use JSON Body (PATCH)
-                // Note: File uploads might not be supported in this JSON PATCH unless backend supports base64 or separate endpoint
-                const jsonPayload = {
+                // Update: Use FormData via Service (PATCH)
+                const existingUrls = formData.images.filter(img => typeof img === 'string') as string[];
+                const newImages = formData.images.filter(img => img instanceof File) as File[];
+                const deletedImageUrls = originalImages.filter(url => !existingUrls.includes(url)) || [];
+
+                const payload = {
                     name_th: formData.name_th,
                     name_eng: formData.name_eng,
                     location: formData.location,
@@ -132,13 +187,11 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                     start_date: formData.start_date,
                     end_date: formData.end_date,
                     favorite: formData.favorite,
-                    objectives: formData.objectives.filter(item => item.trim() !== ""),
-                    goals: formData.goals.filter(item => item.trim() !== ""),
-                    // Only send existing URL strings. New Files cannot be sent via JSON PATCH directly.
-                    images: formData.images.filter(img => typeof img === 'string')
+                    objectives: formData.objectives.filter(item => item.trim() !== "").join(','),
+                    goals: formData.goals.filter(item => item.trim() !== "").join(',')
                 };
 
-                await activityService.update(activityToEdit._id, jsonPayload);
+                await activityService.update(activityToEdit._id, payload, newImages, deletedImageUrls);
 
                 toastUtils.success("สำเร็จ", "แก้ไขข้อมูลกิจกรรมเรียบร้อยแล้ว");
 
@@ -155,13 +208,12 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                 payload.append('end_date', formData.end_date);
                 payload.append('favorite', formData.favorite.toString());
 
-                // Append Arrays
-                formData.objectives.forEach((item) => {
-                    if (item.trim()) payload.append('objectives', item);
-                });
-                formData.goals.forEach((item) => {
-                    if (item.trim()) payload.append('goals', item);
-                });
+                // Append Arrays as Comma-Separated Strings
+                const objectivesStr = formData.objectives.filter(item => item.trim() !== "").join(',');
+                const goalsStr = formData.goals.filter(item => item.trim() !== "").join(',');
+
+                if (objectivesStr) payload.append('objectives', objectivesStr);
+                if (goalsStr) payload.append('goals', goalsStr);
 
                 // Append Images
                 formData.images.forEach((img) => {
@@ -179,9 +231,13 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
             }
             onSuccess();
             onClose();
+
+
+            // ... existing imports
+
         } catch (err: any) {
             console.error(err);
-            toastUtils.error("เกิดข้อผิดพลาด", err.message || "Something went wrong");
+            toastUtils.error("เกิดข้อผิดพลาด", handleApiError(err));
         } finally {
             setIsLoading(false);
         }
@@ -240,7 +296,7 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animation-fade-in">
+        <div className="fixed inset-0 z-[9990] flex items-center m-0 justify-center bg-black/50 backdrop-blur-sm p-4 animation-fade-in">
             <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden transform transition-all scale-100">
 
                 {/* Header */}
@@ -392,13 +448,13 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                                                     className="object-cover"
                                                     sizes="128px"
                                                 />
-                                                <button
+                                                <Button
                                                     type="button"
                                                     onClick={() => handleImageRemove(idx)}
                                                     className="absolute top-1 right-1 bg-white/80 hover:bg-red-500 hover:text-white text-slate-500 p-1 rounded-full transition-all shadow-sm"
                                                 >
                                                     <X size={12} />
-                                                </button>
+                                                </Button>
                                                 {isFile && (
                                                     <div className="absolute bottom-0 left-0 right-0 bg-sky-500/80 text-white text-[10px] px-1 py-0.5 text-center truncate">
                                                         New Upload
@@ -433,10 +489,25 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                                                 onChange={e => handleArrayChange('objectives', idx, e.target.value)}
                                                 placeholder={`วัตถุประสงค์ข้อที่ ${idx + 1}`}
                                             />
-                                            <button type="button" onClick={() => removeArrayItem('objectives', idx)} className="text-slate-400 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => removeArrayItem('objectives', idx)}
+                                                className="text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                            >
+                                                <Trash2 size={16} />
+                                            </Button>
                                         </div>
                                     ))}
-                                    <button type="button" onClick={() => addArrayItem('objectives')} className="text-xs text-sky-500 font-bold hover:underline">+ เพิ่มรายการ</button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={() => addArrayItem('objectives')}
+                                        className="text-xs text-sky-500 font-bold hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/20"
+                                    >
+                                        + เพิ่มรายการ
+                                    </Button>
                                 </div>
 
                                 <div className="space-y-2">
@@ -449,10 +520,25 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                                                 onChange={e => handleArrayChange('goals', idx, e.target.value)}
                                                 placeholder={`เป้าหมายข้อที่ ${idx + 1}`}
                                             />
-                                            <button type="button" onClick={() => removeArrayItem('goals', idx)} className="text-slate-400 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => removeArrayItem('goals', idx)}
+                                                className="text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                            >
+                                                <Trash2 size={16} />
+                                            </Button>
                                         </div>
                                     ))}
-                                    <button type="button" onClick={() => addArrayItem('goals')} className="text-xs text-sky-500 font-bold hover:underline">+ เพิ่มรายการ</button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={() => addArrayItem('goals')}
+                                        className="text-xs text-sky-500 font-bold hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/20"
+                                    >
+                                        + เพิ่มรายการ
+                                    </Button>
                                 </div>
                             </div>
                         </form>
@@ -473,7 +559,7 @@ export default function ActivityModal({ isOpen, onClose, onSuccess, activityToEd
                         form="activity-form"
                         type="submit"
                         disabled={isLoading || isFetchingDetail}
-                        className={isEditMode ? 'bg-sky-500 hover:bg-sky-600' : 'bg-emerald-500 hover:bg-emerald-600'}
+                        className={isEditMode ? 'text-white bg-sky-500 hover:bg-sky-600' : 'text-white bg-emerald-500 hover:bg-emerald-600'}
                     >
                         {isLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
                         {isEditMode ? 'บันทึกการแก้ไข' : 'สร้างกิจกรรม'}

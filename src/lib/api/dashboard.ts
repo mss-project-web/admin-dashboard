@@ -16,5 +16,9 @@ export const dashboardApi = {
     getRecentLogs: async () => {
         const response = await api.get('/dashboard/recent');
         return response.data;
+    },
+    getCloudflareAnalytics: async () => {
+        const response = await api.get('/cloudflare/analytics');
+        return response.data;
     }
 };

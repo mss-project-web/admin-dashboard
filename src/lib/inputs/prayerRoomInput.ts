@@ -58,14 +58,37 @@ export async function parsePrayerRoom(req: Request): Promise<ParsedPrayerRoom> {
         const form = await req.formData();
         const raw: Record<string, unknown> = {};
         for (const [key, value] of form.entries()) {
-            if (key === 'images') continue;
-            if (key === 'delete_images') {
-                const all = form.getAll('delete_images').map((v) => v.toString());
-                raw.delete_images = all.length > 1 ? all : all[0];
-                continue;
-            }
+            if (key === 'images' || key === 'facilities' || key === 'delete_images') continue;
+            if (key.startsWith('location[')) continue; // handled below
             raw[key] = value.toString();
         }
+
+        // facilities: repeated fields (create) OR a single JSON array string (update).
+        // Normalise to a JSON array string so build()'s maybeJson always yields string[].
+        const fac = form.getAll('facilities').map((v) => v.toString());
+        if (fac.length === 1) {
+            let parsed: unknown;
+            try {
+                parsed = JSON.parse(fac[0]);
+            } catch {
+                parsed = undefined;
+            }
+            raw.facilities = Array.isArray(parsed) ? fac[0] : JSON.stringify([fac[0]]);
+        } else if (fac.length > 1) {
+            raw.facilities = JSON.stringify(fac);
+        }
+
+        // location: "location" JSON (update) OR bracket fields location[0]/location[1] (create)
+        if (!raw.location) {
+            const lat = form.get('location[0]');
+            const lng = form.get('location[1]');
+            if (lat != null && lng != null) raw.location = [Number(lat), Number(lng)];
+        }
+
+        // delete_images: JSON array string OR repeated fields
+        const del = form.getAll('delete_images').map((v) => v.toString());
+        if (del.length) raw.delete_images = del.length > 1 ? del : del[0];
+
         const files = form.getAll('images').filter((f): f is File => f instanceof File);
         const newImages: string[] = [];
         for (const file of files) newImages.push(await uploadFile(file));

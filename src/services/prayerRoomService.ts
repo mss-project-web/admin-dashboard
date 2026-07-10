@@ -1,6 +1,8 @@
 import api from "@/lib/axios";
 import { PrayerRoom } from "@/types/prayer-room";
 
+import { createFormDataForUpdate } from '@/lib/api-utils';
+
 export const prayerRoomService = {
     getAll: async () => {
         const response = await api.get<{ status: string; data: PrayerRoom[] }>("/prayer-rooms/");
@@ -13,7 +15,6 @@ export const prayerRoomService = {
     },
 
     create: async (data: FormData) => {
-        // Create uses FormData for file uploads
         const response = await api.post("/prayer-rooms/", data, {
             headers: {
                 "Content-Type": "multipart/form-data",
@@ -22,9 +23,13 @@ export const prayerRoomService = {
         return response.data;
     },
 
-    update: async (id: string, data: any) => {
-        // Update uses JSON as per requirements
-        const response = await api.put(`/prayer-rooms/${id}`, data);
+    update: async (id: string, data: any, newImages?: File[], deletedImageUrls?: string[]) => {
+        const formData = createFormDataForUpdate(data, newImages, deletedImageUrls);
+        const response = await api.put(`/prayer-rooms/${id}`, formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
         return response.data;
     },
 
