@@ -109,7 +109,7 @@ export const activityRepo = {
     },
 
     async findAll() {
-        const snap = await col(COLLECTION).get();
+        const snap = await col(COLLECTION).orderBy('createdAt', 'desc').limit(500).get();
         return snap.docs.map((d) => toListItem(mapDoc<ActivityRaw>(d)));
     },
 
@@ -192,8 +192,11 @@ export const activityRepo = {
             .filter((a) => a.end_date != null);
     },
 
-    async countAll() {
-        return (await col(COLLECTION).count().get()).data().count;
+    async countAll(startDate?: string, endDate?: string) {
+        let query: any = col(COLLECTION);
+        if (startDate) query = query.where('createdAt', '>=', Timestamp.fromDate(new Date(startDate)));
+        if (endDate) query = query.where('createdAt', '<=', Timestamp.fromDate(new Date(endDate)));
+        return (await query.count().get()).data().count;
     },
 
     async getMostViewed(limit = 5) {

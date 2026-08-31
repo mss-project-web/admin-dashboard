@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { handle, ok } from '@/lib/http/response';
-import { requireRole, Role } from '@/lib/auth/guard';
+import { requireMenuPermission } from '@/lib/auth/guard';
 import { prayerRoomRepo } from '@/lib/repositories/prayerRoomRepo';
 import { parsePrayerRoom } from '@/lib/inputs/prayerRoomInput';
 
@@ -18,7 +18,7 @@ export const GET = handle(async (_req, { params }) => {
 });
 
 export const PUT = handle(async (req, { params }) => {
-    await requireRole(Role.ADMIN, Role.SUPERADMIN);
+    await requireMenuPermission('/admin/prayer-rooms');
     const { id } = await params;
     const { fields, newImages, deleteImages } = await parsePrayerRoom(req);
     const updated = await prayerRoomRepo.update(id, fields, newImages, deleteImages);
@@ -26,7 +26,7 @@ export const PUT = handle(async (req, { params }) => {
 });
 
 export const DELETE = handle(async (_req, { params }) => {
-    await requireRole(Role.ADMIN, Role.SUPERADMIN);
+    await requireMenuPermission('/admin/prayer-rooms');
     const { id } = await params;
     await prayerRoomRepo.remove(id);
     return ok(null, 'Prayer room deleted successfully');

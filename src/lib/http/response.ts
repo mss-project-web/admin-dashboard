@@ -3,34 +3,40 @@ import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { logMutation } from './systemLogging';
 
+export interface ApiSuccess<T> {
+    status: 'success';
+    message: string;
+    status_code: number;
+    data: T;
+}
+
+export interface ApiFailure {
+    status: 'fail';
+    message: string;
+    status_code: number;
+    data: null;
+    errors?: unknown;
+}
+
 /**
  * Response envelope compatible with the previous NestJS backend:
- *   success -> { status: 'success', data, message, status_code }
- *   fail    -> { status: 'fail', data: null, message, status_code, errors? }
+ *   success -> { status: 'success', message, status_code, data }
+ *   fail    -> { status: 'fail', message, status_code, data: null, errors? }
  *
  * The frontend services depend on this exact shape, so keep it stable.
  */
-export function ok<T>(data: T, message = 'OK', statusCode = 200) {
+export function ok<T>(data: T, message = 'OK', statusCode = 200): NextResponse<ApiSuccess<T>> {
     return NextResponse.json(
-        { status: 'success', data, message, status_code: statusCode },
+        { status: 'success', message, status_code: statusCode, data },
         { status: statusCode },
     );
 }
 
-export function failBody(message: string, statusCode = 400, errors?: unknown) {
+export function failBody(message: string, statusCode = 400, errors?: unknown): NextResponse<ApiFailure> {
     return NextResponse.json(
-        { status: 'fail', data: null, message, status_code: statusCode, ...(errors ? { errors } : {}) },
+        { status: 'fail', message, status_code: statusCode, data: null, ...(errors ? { errors } : {}) },
         { status: statusCode },
     );
-}
-
-/**
- * Some old controllers returned a pre-formatted { status, data, message } object
- * which the TransformInterceptor then wrapped AGAIN, so the frontend reads
- * `response.data.data.data`. Reproduce that exact double envelope here.
- */
-export function okNested<T>(data: T, message = 'OK', statusCode = 200) {
-    return ok({ status: 'success', data, message, status_code: statusCode }, 'OK', statusCode);
 }
 
 /** Throwable HTTP error, mirrors Nest's HttpException family. */
@@ -46,6 +52,7 @@ export const Unauthorized = (m = 'Unauthorized') => new ApiError(m, 401);
 export const Forbidden = (m = 'Forbidden') => new ApiError(m, 403);
 export const NotFound = (m = 'Not found') => new ApiError(m, 404);
 export const BadRequest = (m = 'Bad request') => new ApiError(m, 400);
+export const TooManyRequests = (m = 'Too many requests') => new ApiError(m, 429);
 
 /**
  * Wrap a route handler so thrown ApiError / ZodError become the standard
@@ -77,13 +84,11 @@ export function handle(
             if (err instanceof ApiError) {
                 return failBody(err.message, err.statusCode);
             }
+            if (err instanceof SyntaxError) {
+                return failBody('Malformed JSON request body', 400);
+            }
             console.error('[api] unhandled error:', err);
-            // TEMP DEBUG: surface the real error to diagnose the Vercel 500.
-            const detail =
-                err instanceof Error
-                    ? `${err.name}: ${err.message} :: ${(err.stack || '').split('\n').slice(1, 3).join(' | ')}`
-                    : String(err);
-            return failBody(`Internal server error [DEBUG] ${detail}`, 500);
+            return failBody('Internal server error', 500);
         }
     };
 }

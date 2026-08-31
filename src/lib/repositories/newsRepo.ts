@@ -12,8 +12,10 @@ export type NewsFields = {
     description?: string;
 };
 
+export type NewsSource = { source: string; sourceId: string };
+
 export const newsRepo = {
-    async create(fields: NewsFields, images: string[]) {
+    async create(fields: NewsFields, images: string[], source?: NewsSource) {
         const ref = await col(COLLECTION).add({
             name: fields.name,
             date: fields.date ? Timestamp.fromDate(fields.date) : null,
@@ -21,13 +23,21 @@ export const newsRepo = {
             description: fields.description ?? '',
             images,
             views: 0,
+            source: source?.source ?? null,
+            sourceId: source?.sourceId ?? null,
             ...timestamps(),
         });
         return mapDoc(await ref.get());
     },
 
+    /** True if a news item already exists for this external source id (dedup). */
+    async existsBySourceId(sourceId: string) {
+        const snap = await col(COLLECTION).where('sourceId', '==', sourceId).limit(1).get();
+        return !snap.empty;
+    },
+
     async findAll() {
-        return mapQuery(col(COLLECTION).orderBy('createdAt', 'desc'));
+        return mapQuery(col(COLLECTION).orderBy('createdAt', 'desc').limit(500));
     },
 
     async getByDateRange(start: Date, end: Date) {
@@ -100,7 +110,10 @@ export const newsRepo = {
         await ref.delete();
     },
 
-    async countAll() {
-        return (await col(COLLECTION).count().get()).data().count;
+    async countAll(startDate?: string, endDate?: string) {
+        let query: any = col(COLLECTION);
+        if (startDate) query = query.where('createdAt', '>=', Timestamp.fromDate(new Date(startDate)));
+        if (endDate) query = query.where('createdAt', '<=', Timestamp.fromDate(new Date(endDate)));
+        return (await query.count().get()).data().count;
     },
 };

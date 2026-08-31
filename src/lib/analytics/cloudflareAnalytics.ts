@@ -2,7 +2,10 @@ import 'server-only';
 import { ApiError } from '../http/response';
 
 const API_URL = 'https://api.cloudflare.com/client/v4/graphql';
-const PROJECT_START_DATE = '2024-01-01';
+
+// Cloudflare free tier only allows querying data up to 365 days old.
+// We set the start date to 364 days ago to be safe.
+const PROJECT_START_DATE = new Date(Date.now() - 364 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
 function buildYearlyRanges(startDateStr: string): { start: string; end: string }[] {
     const ranges: { start: string; end: string }[] = [];
@@ -11,8 +14,8 @@ function buildYearlyRanges(startDateStr: string): { start: string; end: string }
 
     while (cursor < today) {
         const rangeEnd = new Date(cursor);
-        rangeEnd.setFullYear(rangeEnd.getFullYear() + 1);
-        rangeEnd.setDate(rangeEnd.getDate() - 1);
+        // Chunk by 360 days to strictly stay under Cloudflare's 52w1d limit (even on leap years)
+        rangeEnd.setDate(rangeEnd.getDate() + 360);
         const end = rangeEnd > today ? today : rangeEnd;
 
         ranges.push({ start: cursor.toISOString().split('T')[0], end: end.toISOString().split('T')[0] });

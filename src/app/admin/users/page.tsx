@@ -8,27 +8,35 @@ import {
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/hooks/useAuth";
-import UserModal from "./components/UserModal";
 import DeleteUserModal from "./components/DeleteUserModal";
 import { User } from "@/types/user";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function UsersPage() {
-    const { users, loading, error, refresh } = useUsers();
-    const router = useRouter();
-
-
     const [searchTerm, setSearchTerm] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(20);
-    const [sortConfig, setSortConfig] = useState<{ key: keyof User; direction: 'asc' | 'desc' | null }>({ key: 'createdAt' as keyof User, direction: 'desc' });
 
-    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    // Debounce search term to prevent rapid API calls
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    // Reset to page 1 when search or limit changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [debouncedSearch, itemsPerPage]);
+
+    // Server-side fetching
+    const { users, total, totalPages, loading, error, refresh } = useUsers(currentPage, itemsPerPage, debouncedSearch);
 
     const [isDeleteUserOpen, setIsDeleteUserOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
+    const router = useRouter();
     const { user, isSuperAdmin, loading: authLoading } = useAuth();
 
     useEffect(() => {
@@ -45,16 +53,6 @@ export default function UsersPage() {
         });
     };
 
-    const handleAddClick = () => {
-        setSelectedUser(null);
-        setIsUserModalOpen(true);
-    };
-
-    const handleEditClick = (user: User) => {
-        setSelectedUser(user);
-        setIsUserModalOpen(true);
-    };
-
     const handleDeleteClick = (userToDelete: User) => {
         if (user && user._id === userToDelete._id) {
             alert("ไม่สามารถลบบัญชีผู้ใช้ที่กำลังใช้งานอยู่ได้");
@@ -64,36 +62,7 @@ export default function UsersPage() {
         setIsDeleteUserOpen(true);
     };
 
-    const processedUsers = useMemo(() => {
-        let items = [...users].filter(u =>
-            u.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            u.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            u.phoneNumber?.includes(searchTerm)
-        );
 
-        if (sortConfig.direction !== null) {
-            items.sort((a, b) => {
-                const aValue = a[sortConfig.key] || "";
-                const bValue = b[sortConfig.key] || "";
-
-                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-                return 0;
-            });
-        }
-        return items;
-    }, [users, searchTerm, sortConfig]);
-
-    const totalPages = Math.ceil(processedUsers.length / itemsPerPage);
-    const currentItems = processedUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-    const requestSort = (key: keyof User) => {
-        let direction: 'asc' | 'desc' | null = 'asc';
-        if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
-        else if (sortConfig.key === key && sortConfig.direction === 'desc') direction = null;
-        setSortConfig({ key, direction });
-    };
 
     // Unified loading state
     const isPageLoading = authLoading || loading;
@@ -102,13 +71,6 @@ export default function UsersPage() {
 
     return (
         <div className="w-full space-y-4 pb-32">
-
-            <UserModal
-                isOpen={isUserModalOpen}
-                onClose={() => setIsUserModalOpen(false)}
-                onSuccess={refresh}
-                userToEdit={selectedUser}
-            />
 
             {userToDelete && (
                 <DeleteUserModal
@@ -129,14 +91,14 @@ export default function UsersPage() {
                     </h2>
                 </div>
                 <div className="flex gap-2">
-                    <button
-                        onClick={handleAddClick}
+                    <Link
+                        href="/admin/users/create"
                         className="cursor-pointer flex items-center gap-1.5 bg-sky-500 hover:bg-sky-600 text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold shadow-md transition-all active:scale-95"
                     >
                         <Plus size={16} />
                         <span className="inline sm:hidden">เพิ่ม</span>
                         <span className="hidden sm:inline">เพิ่มผู้ใช้งานใหม่</span>
-                    </button>
+                    </Link>
                 </div>
             </div>
 
@@ -179,21 +141,23 @@ export default function UsersPage() {
 
             {/* 3. TABLE AREA */}
             <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
-                <div className="overflow-x-auto custom-scrollbar pb-2">
-                    <table className="w-full text-left border-collapse table-fixed min-w-[950px]">
+                <div className="hidden overflow-x-auto custom-scrollbar pb-2 md:block">
+                    <table className="w-full min-w-[1020px] table-fixed border-collapse text-left">
                         <thead className="z-20 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
                             <tr>
-                                <th onClick={() => requestSort('firstName')} className="px-6 py-3 w-1/4 cursor-pointer hover:bg-sky-50 transition-colors text-sky-600">ผู้ใช้งาน <ArrowUpDown size={10} className="inline ml-1" /></th>
+                                <th className="px-4 py-3 w-16 text-center">#</th>
+                                <th className="px-6 py-3 w-1/4">ผู้ใช้งาน <ArrowUpDown size={10} className="inline ml-1" /></th>
                                 <th className="px-6 py-3">ติดต่อ</th>
-                                <th onClick={() => requestSort('role')} className="px-6 py-3 w-32 text-center font-medium cursor-pointer hover:bg-sky-50">บทบาท</th>
-                                <th onClick={() => requestSort('lastLoginAt')} className="px-6 py-3 w-40 text-center cursor-pointer hover:bg-sky-50">เข้าใช้งานล่าสุด</th>
+                                <th className="px-6 py-3 w-48 text-center font-medium">สังกัดฝ่าย</th>
+                                <th className="px-6 py-3 w-32 text-center font-medium">บทบาท</th>
+                                <th className="px-6 py-3 w-40 text-center">เข้าใช้งานล่าสุด</th>
                                 <th className="px-6 py-3 w-28 text-right pr-8 sticky right-0 bg-slate-50 dark:bg-slate-900 border-l border-slate-200 shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody className="text-[13px] divide-y divide-slate-100 dark:divide-slate-800">
                             {error ? (
                                 <tr>
-                                    <td colSpan={6} className="text-center py-10 text-red-500 bg-red-50/50">
+                                    <td colSpan={7} className="text-center py-10 text-red-500 bg-red-50/50">
                                         <div className="flex flex-col items-center justify-center gap-2">
                                             <span className="font-bold">เกิดข้อผิดพลาดในการโหลดข้อมูล</span>
                                             <span className="text-xs text-red-400">{error}</span>
@@ -209,6 +173,7 @@ export default function UsersPage() {
                             ) : isPageLoading ? (
                                 [...Array(6)].map((_, i) => (
                                     <tr key={i} className="bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
+                                        <td className="px-4 py-4 text-center"><Skeleton className="h-4 w-4 mx-auto" /></td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <Skeleton className="h-9 w-9 rounded-full" />
@@ -222,6 +187,7 @@ export default function UsersPage() {
                                             <Skeleton className="h-3 w-32" />
                                             <Skeleton className="h-3 w-24" />
                                         </td>
+                                        <td className="px-6 py-4 text-center"><Skeleton className="h-6 w-16 mx-auto rounded-full" /></td>
                                         <td className="px-6 py-4 text-center"><Skeleton className="h-6 w-20 mx-auto rounded" /></td>
                                         <td className="px-6 py-4 text-center"><Skeleton className="h-4 w-28 mx-auto" /></td>
                                         <td className="px-6 py-4 text-right">
@@ -232,49 +198,78 @@ export default function UsersPage() {
                                         </td>
                                     </tr>
                                 ))
-                            ) : currentItems.length === 0 ? (
+                            ) : users.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="text-center py-10 text-slate-400">ไม่พบข้อมูลผู้ใช้งาน</td>
+                                    <td colSpan={7} className="text-center py-10 text-slate-400">ไม่พบข้อมูลผู้ใช้งาน</td>
                                 </tr>
                             ) : (
-                                currentItems.map((user, index) => (
+                                users.map((userItem, index) => (
                                     <tr
-                                        key={user._id}
-                                        className={`group transition-colors ${index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-[#f8fafc] dark:bg-[#0f172a]'
-                                            } hover:bg-sky-50/30`}
+                                        key={userItem._id}
+                                        className={`group border-y transition-colors ${user?._id === userItem._id
+                                            ? 'border-y-2 border-emerald-300 bg-emerald-50/60 dark:border-emerald-800 dark:bg-emerald-950/20'
+                                            : `${index % 2 === 0 ? 'border-transparent bg-white dark:bg-slate-950' : 'border-transparent bg-[#f8fafc] dark:bg-[#0f172a]'} hover:bg-sky-50/30`}`}
                                     >
+                                        <td className="px-4 py-4 text-center font-medium text-slate-500">
+                                            {((currentPage - 1) * itemsPerPage) + index + 1}
+                                        </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="h-9 w-9 rounded-full bg-sky-100 border border-sky-200 flex items-center justify-center text-sky-600 font-bold text-xs uppercase shadow-sm">
-                                                    {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+                                                    {userItem.firstName?.charAt(0)}{userItem.lastName?.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <div className="font-bold text-slate-700 dark:text-slate-200">{user.firstName} {user.lastName}</div>
-                                                    <div className="text-[10px] text-slate-400">Created: {formatDate(user.createdAt).split(' ')[0]}</div>
+                                                    <div className="font-bold text-slate-700 dark:text-slate-200">{userItem.firstName} {userItem.lastName}</div>
+                                                    <div className="text-[10px] text-slate-400">สร้างเมื่อ {formatDate(userItem.createdAt).split(' ').slice(0, 3).join(' ')}</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-slate-600 dark:text-slate-400 space-y-0.5 font-medium">
-                                            <div className="flex items-center gap-1.5"><Mail size={12} className="text-sky-400" /> {user.email}</div>
-                                            <div className="flex items-center gap-1.5 text-slate-400 text-xs"><Phone size={12} /> {user.phoneNumber || "-"}</div>
+                                            <div className="flex items-center gap-1.5"><Mail size={12} className="text-sky-400" /> {userItem.email}</div>
+                                            <div className="flex items-center gap-1.5 text-slate-400 text-xs"><Phone size={12} /> {userItem.phoneNumber || "-"}</div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <span className={`inline-flex px-2 py-1 rounded text-[10px] font-black uppercase border ${user.role === 'superadmin' ? 'bg-purple-50 text-purple-600 border-purple-100' :
-                                                user.role === 'admin' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' :
-                                                    'bg-slate-50 text-slate-500 border-slate-100'
-                                                }`}>
-                                                {user.role}
-                                            </span>
+                                            {userItem.departments && userItem.departments.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1.5 justify-center">
+                                                    {userItem.departments.map(d => (
+                                                        <span key={d} className="inline-flex px-2 py-0.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50">
+                                                            {d}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-300 dark:text-slate-600 text-xs">-</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex flex-col gap-2 items-center">
+                                                <span className={`inline-flex px-2 py-1 rounded text-[10px] font-black uppercase border ${userItem.role === 'superadmin' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                                                    userItem.role === 'admin' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' :
+                                                        'bg-slate-50 text-slate-500 border-slate-100'
+                                                    }`}>
+                                                    {userItem.role}
+                                                </span>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-center text-slate-400 font-medium text-xs">
-                                            {formatDate(user.lastLoginAt!) || "-"}
+                                            {formatDate(userItem.lastLoginAt!) || "-"}
                                         </td>
 
-                                        <td className={`px-6 py-4 text-right pr-8 sticky right-0 border-l border-slate-100 transition-colors shadow-[-4px_0_10px_rgba(0,0,0,0.02)] ${index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50 dark:bg-slate-900'
-                                            } group-hover:bg-sky-50 dark:group-hover:bg-slate-800`}>
+                                        <td className={`px-6 py-4 text-right pr-6 sticky right-0 transition-colors shadow-[-4px_0_10px_rgba(0,0,0,0.02)] ${user?._id === userItem._id
+                                            ? 'bg-emerald-50 dark:bg-emerald-950/30'
+                                            : `${index % 2 === 0 ? 'border-slate-100 bg-white dark:bg-slate-950' : 'border-slate-100 bg-slate-50 dark:bg-slate-900'} group-hover:bg-sky-50 dark:group-hover:bg-slate-800`}`}>
                                             <div className="flex justify-end gap-1.5 relative z-20">
-                                                <button onClick={() => handleEditClick(user)} className="cursor-pointer p-1.5 text-sky-600 hover:bg-white rounded shadow-sm border border-transparent hover:border-sky-100 transition-all"><Edit2 size={14} /></button>
-                                                <button onClick={() => handleDeleteClick(user)} className="cursor-pointer p-1.5 text-rose-500 hover:bg-rose-50 rounded transition-all"><Trash2 size={14} /></button>
+                                                {user?._id === userItem._id ? (
+                                                    <span className="inline-flex min-w-[104px] items-center justify-center gap-2 whitespace-nowrap rounded-xl border-2 border-emerald-500 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 shadow-sm shadow-emerald-100 dark:border-emerald-400 dark:bg-emerald-950/30 dark:text-emerald-300 dark:shadow-none">
+                                                        <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.15)]" aria-hidden="true" />
+                                                        กำลังใช้งาน
+                                                    </span>
+                                                ) : (
+                                                    <>
+                                                        <Link href={"/admin/users/edit/" + userItem._id} aria-label={"แก้ไขผู้ใช้ " + userItem.email} className="cursor-pointer rounded-lg border border-transparent p-1.5 text-sky-600 shadow-sm transition-colors hover:border-sky-100 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"><Edit2 size={14} aria-hidden="true" /></Link>
+                                                        <button type="button" onClick={() => handleDeleteClick(userItem)} aria-label={"ลบผู้ใช้ " + userItem.email} className="cursor-pointer rounded-lg p-1.5 text-rose-500 transition-colors hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"><Trash2 size={14} aria-hidden="true" /></button>
+                                                    </>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -283,11 +278,112 @@ export default function UsersPage() {
                         </tbody>
                     </table>
                 </div>
+
+                <div className="space-y-3 p-3 md:hidden">
+                    {error ? (
+                        <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-center text-rose-600 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-400">
+                            <p className="font-bold">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
+                            <p className="mt-1 text-xs">{error}</p>
+                            <button type="button" onClick={refresh} className="mt-3 rounded-lg border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-600 shadow-sm hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 dark:border-rose-900 dark:bg-slate-950">
+                                ลองใหม่อีกครั้ง
+                            </button>
+                        </div>
+                    ) : isPageLoading ? (
+                        [...Array(5)].map((_, index) => (
+                            <div key={index} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
+                                <div className="flex items-center gap-3">
+                                    <Skeleton className="h-11 w-11 rounded-full" />
+                                    <div className="flex-1 space-y-2">
+                                        <Skeleton className="h-4 w-32" />
+                                        <Skeleton className="h-3 w-44 max-w-full" />
+                                    </div>
+                                    <Skeleton className="h-7 w-16 rounded-lg" />
+                                </div>
+                                <div className="mt-4 grid grid-cols-2 gap-3">
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-4 w-28 justify-self-end" />
+                                </div>
+                            </div>
+                        ))
+                    ) : users.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-slate-200 py-12 text-center text-sm text-slate-400 dark:border-slate-800">
+                            ไม่พบข้อมูลผู้ใช้งาน
+                        </div>
+                    ) : (
+                        users.map((userItem, index) => {
+                            const isCurrentUser = user?._id === userItem._id;
+                            const displayName = [userItem.firstName, userItem.lastName].filter(Boolean).join(" ") || userItem.email;
+                            const roleClass = userItem.role === "superadmin"
+                                ? "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900/60 dark:bg-purple-950/30 dark:text-purple-300"
+                                : userItem.role === "admin"
+                                    ? "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-300"
+                                    : "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300";
+                            return (
+                                <article key={userItem._id} className={"rounded-2xl border-2 p-4 shadow-sm transition-shadow hover:shadow-md " + (isCurrentUser
+                                    ? "border-emerald-400 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/20"
+                                    : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950")}>
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-sky-200 bg-sky-100 text-sm font-bold uppercase text-sky-700 dark:border-sky-900 dark:bg-sky-950/50 dark:text-sky-300">
+                                            {userItem.firstName?.charAt(0)}{userItem.lastName?.charAt(0)}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <h3 className="truncate font-bold text-slate-800 dark:text-slate-100">{displayName}</h3>
+                                                    <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{userItem.email}</p>
+                                                </div>
+                                                <span className="shrink-0 text-xs font-bold text-slate-400">#{((currentPage - 1) * itemsPerPage) + index + 1}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 grid grid-cols-2 gap-3 border-y border-slate-100 py-3 text-xs dark:border-slate-800">
+                                        <div className="min-w-0">
+                                            <p className="text-slate-400">เบอร์โทร</p>
+                                            <p className="mt-1 truncate font-semibold text-slate-700 dark:text-slate-200">{userItem.phoneNumber || "-"}</p>
+                                        </div>
+                                        <div className="min-w-0 text-right">
+                                            <p className="text-slate-400">เข้าใช้งานล่าสุด</p>
+                                            <p className="mt-1 truncate font-semibold text-slate-700 dark:text-slate-200">{formatDate(userItem.lastLoginAt!) || "-"}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <div className="flex flex-wrap gap-1.5">
+                                            <span className={"inline-flex rounded-lg border px-2 py-1 text-[10px] font-black uppercase " + roleClass}>{userItem.role}</span>
+                                            {userItem.departments?.slice(0, 2).map((department) => (
+                                                <span key={department} className="inline-flex max-w-[140px] truncate rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-bold text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-300">
+                                                    {department}
+                                                </span>
+                                            ))}
+                                            {(userItem.departments?.length ?? 0) > 2 && <span className="px-1 py-1 text-[10px] font-bold text-slate-400">+{userItem.departments!.length - 2}</span>}
+                                        </div>
+                                        {isCurrentUser ? (
+                                            <span className="inline-flex items-center gap-2 rounded-xl border-2 border-emerald-500 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 shadow-sm shadow-emerald-100 dark:border-emerald-400 dark:bg-emerald-950/30 dark:text-emerald-300 dark:shadow-none">
+                                                <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+                                                กำลังใช้งาน
+                                            </span>
+                                        ) : (
+                                            <div className="flex items-center gap-1.5">
+                                                <Link href={"/admin/users/edit/" + userItem._id} aria-label={"แก้ไขผู้ใช้ " + userItem.email} className="rounded-lg border border-sky-100 p-2 text-sky-600 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 dark:border-sky-900/60 dark:hover:bg-sky-950/40">
+                                                    <Edit2 size={15} aria-hidden="true" />
+                                                </Link>
+                                                <button type="button" onClick={() => handleDeleteClick(userItem)} aria-label={"ลบผู้ใช้ " + userItem.email} className="rounded-lg border border-rose-100 p-2 text-rose-500 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 dark:border-rose-900/60 dark:hover:bg-rose-950/30">
+                                                    <Trash2 size={15} aria-hidden="true" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </article>
+                            );
+                        })
+                    )}
+                </div>
             </div>
 
             {/* 4. Bottom Statistics Info */}
             <div className="p-4 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl flex justify-center items-center text-xs font-bold text-slate-400 uppercase tracking-widest shadow-sm">
-                <span>Total Records Found: {processedUsers.length}</span>
+                <span>Total Records Found: {total}</span>
             </div>
         </div>
     );

@@ -3,6 +3,7 @@
 import { BlogContentBlock } from "@/types/blog";
 import { X } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
+import Image from "next/image";
 
 interface BlogPreviewProps {
     blocks: BlogContentBlock[];
@@ -51,9 +52,11 @@ export default function BlogPreview({ blocks, onClose }: BlogPreviewProps) {
                             return (
                                 <figure key={index} className="flex flex-col items-center my-8">
                                     {data.url && (
-                                        <img
+                                        <Image
                                             src={data.url}
                                             alt={data.caption || "Blog Image"}
+                                            width={1200}
+                                            height={800}
                                             className="w-full h-auto rounded-xl shadow-md"
                                         />
                                     )}

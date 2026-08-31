@@ -4,13 +4,15 @@ import {
     LogOut, ChevronLeft, ChevronRight, ChevronDown, User as UserIcon
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from 'next/navigation';
 import { useAuth } from "@/hooks/useAuth";
 import { authApi } from "@/lib/api/auth";
 import { userService } from "@/services/userService";
-import ProfileModal from "../ProfileModal";
+import { permissionService, PermissionSettings } from "@/services/permissionService";
+import { User } from "@/types/user";
 
 const menuItems = [
     { icon: LayoutDashboard, label: "ภาพรวม", href: "/admin" },
@@ -30,9 +32,17 @@ const menuItems = [
         ]
     },
     { icon: HeartHandshake, label: "ติดต่อ & บริจาค", href: "/admin/settings" },
-    { icon: Users, label: "จัดการผู้ใช้", href: "/admin/users", roles: ['superadmin'] },
+    {
+        icon: Users, label: "จัดการผู้ใช้",
+        subItems: [
+            { label: "รายชื่อผู้ใช้งาน", href: "/admin/users" },
+            { label: "จัดการสิทธิ์", href: "/admin/permissions" },
+        ]
+    },
     { icon: Logs, label: "System Logs", href: "/admin/log", roles: ['superadmin'] },
 ];
+
+import { Shield } from "lucide-react";
 
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v: boolean) => void }) {
     const router = useRouter();
@@ -45,11 +55,12 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
     const [profileName, setProfileName] = useState("");
     const [profileInitials, setProfileInitials] = useState("");
     const [profileRole, setProfileRole] = useState("");
+    const [userDepartments, setUserDepartments] = useState<string[]>([]);
+    const [permissions, setPermissions] = useState<PermissionSettings | null>(null);
     const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-    const [showProfileModal, setShowProfileModal] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Fetch profile on mount
+    // Fetch profile and permissions on mount
     useEffect(() => {
         const fetchProfile = async () => {
             try {
@@ -59,6 +70,13 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
                 setProfileName(`${fn} ${ln}`.trim());
                 setProfileInitials(`${fn.charAt(0)}${ln.charAt(0)}`.toUpperCase());
                 setProfileRole(me.role);
+                setUserDepartments(me.departments || []);
+                
+                // Fetch permissions if not superadmin (superadmin sees everything)
+                if (me.role !== 'superadmin') {
+                    const perms = await permissionService.getSettings();
+                    setPermissions(perms);
+                }
             } catch (error) {
                 console.error("Failed to load profile for sidebar", error);
                 setProfileName("User");
@@ -84,12 +102,37 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
         setOpenMenus(prev => prev.includes(label) ? prev.filter(i => i !== label) : [...prev, label]);
     };
 
-    const visibleMenuItems = menuItems.filter(item => !item.roles || (item.roles.includes('superadmin') && isSuperAdmin));
+    const hasPermission = (href: string) => {
+        if (isSuperAdmin) return true; // Superadmin always has access
+        if (!permissions) return false; // Loading permissions
+        
+        // Check if ANY of the user's departments have access to this href
+        return userDepartments.some(dept => {
+            const allowed = permissions.departments[dept] || [];
+            return allowed.includes(href);
+        });
+    };
+
+    const visibleMenuItems = menuItems.filter(item => {
+        // First check role constraints (e.g. superadmin only menus)
+        if (item.roles && (!item.roles.includes('superadmin') || !isSuperAdmin)) {
+            return false;
+        }
+        
+        // If it's a submenu group, keep it if at least one subitem is permitted
+        if (item.subItems) {
+            item.subItems = item.subItems.filter(sub => hasPermission(sub.href));
+            return item.subItems.length > 0;
+        }
+        
+        // For regular items, check department permissions
+        return item.href ? hasPermission(item.href) : true;
+    });
 
     const handleLogout = async () => {
         try {
             await authApi.logout();
-            router.push("/auth/login?logout=success");
+            window.location.href = "/auth/login?logout=success";
         } catch (error) {
             console.error("Logout failed", error);
         }
@@ -113,11 +156,11 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
                 <div className={`flex-none flex items-center h-16 px-4 border-b border-sky-50 dark:border-slate-800 ${isCollapsed && !isOpen ? "lg:justify-center" : "justify-between"}`}>
                     {(!isCollapsed || isOpen) && (
                         <div className="flex items-center gap-2">
-                            <img src="/favicon.ico" alt="MSS Logo" className="h-8 w-8 rounded-lg" />
+                            <Image src="/favicon.ico" alt="MSS Logo" width={32} height={32} className="h-8 w-8 rounded-lg" />
                             <span className="text-xl font-bold text-sky-600">MSS - Admin</span>
                         </div>
                     )}
-                    <button onClick={() => setIsCollapsed(!isCollapsed)} className="hidden lg:block p-1.5 hover:bg-sky-50 rounded-md text-sky-600">
+                    <button type="button" aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"} onClick={() => setIsCollapsed(!isCollapsed)} className="hidden lg:block p-1.5 hover:bg-sky-50 rounded-md text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500">
                         {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                     </button>
                 </div>
@@ -161,6 +204,8 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
                 <div className="flex-none p-3 border-t border-sky-50 dark:border-slate-800" ref={dropdownRef}>
                     <div className="relative">
                         <button
+                            type="button"
+                            aria-label="Open profile menu"
                             onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                             className={`cursor-pointer flex w-full items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all ${isCollapsed && !isOpen ? "justify-center" : ""}`}
                         >
@@ -185,7 +230,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
                                 <button
                                     onClick={() => {
                                         setShowProfileDropdown(false);
-                                        setShowProfileModal(true);
+                                        router.push('/admin/profile');
                                     }}
                                     className="cursor-pointer flex items-center gap-3 w-full px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                 >
@@ -208,9 +253,6 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
                     </div>
                 </div>
             </aside>
-
-            {/* Profile Modal */}
-            <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
         </>
     );
 }

@@ -3,24 +3,24 @@ import { Anuphan } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/app/components/ui/toaster";
 import { Providers } from "@/app/components/providers";
-
+import { getSession } from "@/actions/auth";
 
 const anuphan = Anuphan({
   variable: "--font-anuphan",
   subsets: ["latin", "thai"],
 });
 
-
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   themeColor: "#ffffff",
 };
 
 export const metadata: Metadata = {
-  title: "MSS - Admin dashboard",
+  title: {
+    default: "MSS - Admin dashboard",
+    template: "%s | MSS - Admin dashboard",
+  },
   description: "MSS - Admin dashboard",
   icons: {
     icon: "/icon.svg",
@@ -28,17 +28,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const sessionUser = await getSession();
+
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${anuphan.variable} antialiased`}
-      >
-        <Providers>
+    <html lang="en" className={anuphan.variable} suppressHydrationWarning>
+      <body className="antialiased">
+        <Providers initialUser={sessionUser}>
           {children}
           <Toaster />
         </Providers>

@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { handle, ok } from '@/lib/http/response';
-import { requireRole, Role } from '@/lib/auth/guard';
+import { requireMenuPermission } from '@/lib/auth/guard';
 import { activityRepo } from '@/lib/repositories/activityRepo';
 import { parseActivity } from '@/lib/inputs/activityInput';
 
@@ -19,7 +19,7 @@ export const GET = handle(async (_req, { params }) => {
 });
 
 export const PATCH = handle(async (req, { params }) => {
-    await requireRole(Role.ADMIN, Role.SUPERADMIN);
+    await requireMenuPermission('/admin/activity');
     const { id } = await params;
     const { fields, newImages, deleteImages } = await parseActivity(req);
     const updated = await activityRepo.update(id, fields, newImages, deleteImages);
@@ -27,7 +27,7 @@ export const PATCH = handle(async (req, { params }) => {
 });
 
 export const DELETE = handle(async (_req, { params }) => {
-    await requireRole(Role.ADMIN, Role.SUPERADMIN);
+    await requireMenuPermission('/admin/activity');
     const { id } = await params;
     await activityRepo.remove(id);
     return ok(null, 'Activity deleted successfully');

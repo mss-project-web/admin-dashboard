@@ -23,7 +23,7 @@ export function Pagination({
     onItemsPerPageChange
 }: PaginationProps) {
     return (
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto justify-between lg:justify-end">
+        <div className="flex flex-row items-center gap-2 w-full lg:w-auto justify-between lg:justify-end">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
                 <span>แสดง:</span>
                 <select
@@ -42,6 +42,8 @@ export function Pagination({
 
             <div className="flex items-center gap-1">
                 <button
+                    type="button"
+                    aria-label="หน้าแรก"
                     disabled={currentPage === 1}
                     onClick={() => onPageChange(1)}
                     className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-30 transition-colors"
@@ -50,6 +52,8 @@ export function Pagination({
                     <ChevronsLeft size={16} />
                 </button>
                 <button
+                    type="button"
+                    aria-label="หน้าก่อนหน้า"
                     disabled={currentPage === 1}
                     onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                     className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-30 transition-colors"
@@ -63,6 +67,8 @@ export function Pagination({
                 </span>
 
                 <button
+                    type="button"
+                    aria-label="หน้าถัดไป"
                     disabled={currentPage === totalPages || totalPages === 0}
                     onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
                     className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-30 transition-colors"
@@ -71,6 +77,8 @@ export function Pagination({
                     <ChevronRight size={16} />
                 </button>
                 <button
+                    type="button"
+                    aria-label="หน้าสุดท้าย"
                     disabled={currentPage === totalPages || totalPages === 0}
                     onClick={() => onPageChange(totalPages)}
                     className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-30 transition-colors"

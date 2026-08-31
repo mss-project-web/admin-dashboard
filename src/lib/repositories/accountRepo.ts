@@ -1,5 +1,5 @@
 import 'server-only';
-import { col, mapDoc, mapQuery, timestamps, touch, FieldValue } from '../firebase/firestore';
+import { col, mapDoc, mapQuery, timestamps, touch, Timestamp, FieldValue } from '../firebase/firestore';
 import { getAdminAuth } from '../firebase/admin';
 import { BadRequest, NotFound } from '../http/response';
 import { signInWithPassword, setRoleClaim } from '../auth/firebase';
@@ -7,6 +7,7 @@ import { signInWithPassword, setRoleClaim } from '../auth/firebase';
 const COLLECTION = 'accounts';
 
 export type AccountRole = 'user' | 'admin' | 'superadmin';
+export type Department = string;
 
 export type CreateAccount = {
     email: string;
@@ -16,12 +17,17 @@ export type CreateAccount = {
     phoneNumber?: string;
     role?: AccountRole;
     createdBy?: string;
+    mustChangePassword?: boolean;
+    departments?: Department[];
 };
 
-export type UpdateAccount = Partial<Omit<CreateAccount, 'password'>> & { password?: string };
+export type UpdateAccount = Partial<Omit<CreateAccount, 'password'>> & { password?: string; mustChangePassword?: boolean; departments?: Department[] };
 
 type AccountProfile = {
     email: string;
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
     role: AccountRole;
     deletedAt: string | null;
     [k: string]: unknown;
@@ -57,7 +63,9 @@ export const accountRepo = {
             lastName: dto.lastName,
             phoneNumber: dto.phoneNumber ?? null,
             role,
+            departments: dto.departments ?? [],
             createdBy: dto.createdBy ?? null,
+            mustChangePassword: dto.mustChangePassword ?? false,
             lastLoginAt: null,
             deletedAt: null,
             deletedBy: null,
@@ -66,8 +74,53 @@ export const accountRepo = {
         return mapDoc(await ref.get());
     },
 
+    async findPaginated(search?: string, page = 1, limit = 20) {
+        const q = col(COLLECTION)
+            .where('deletedAt', '==', null)
+            .orderBy('createdAt', 'desc');
+
+        if (search) {
+            const s = search.toLowerCase();
+            const snap = await q.get();
+            const all = snap.docs.map(d => mapDoc<AccountProfile>(d));
+            const filtered = all.filter(u => 
+                u.email?.toLowerCase().includes(s) ||
+                u.firstName?.toLowerCase().includes(s) ||
+                u.lastName?.toLowerCase().includes(s) ||
+                u.phoneNumber?.includes(s)
+            );
+            const total = filtered.length;
+            const start = (page - 1) * limit;
+            const data = filtered.slice(start, start + limit);
+            return {
+                data,
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            };
+        }
+
+        const countSnap = await col(COLLECTION).where('deletedAt', '==', null).count().get();
+        const total = countSnap.data().count;
+
+        const snap = await q.offset((page - 1) * limit).limit(limit).get();
+        const data = snap.docs.map(d => mapDoc<AccountProfile>(d));
+
+        return {
+            data,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
+        };
+    },
+
     async findAll() {
-        return mapQuery(col(COLLECTION).where('deletedAt', '==', null));
+        return mapQuery(col(COLLECTION)
+            .where('deletedAt', '==', null)
+            .orderBy('createdAt', 'desc')
+            .limit(500));
     },
 
     async findOne(uid: string) {
@@ -94,6 +147,8 @@ export const accountRepo = {
         if (dto.firstName !== undefined) patch.firstName = dto.firstName;
         if (dto.lastName !== undefined) patch.lastName = dto.lastName;
         if (dto.phoneNumber !== undefined) patch.phoneNumber = dto.phoneNumber;
+        if (dto.mustChangePassword !== undefined) patch.mustChangePassword = dto.mustChangePassword;
+        if (dto.departments !== undefined) patch.departments = dto.departments;
         await ref.update(patch);
         return mapDoc(await ref.get());
     },
@@ -133,7 +188,10 @@ export const accountRepo = {
         await col(COLLECTION).doc(uid).update({ lastLoginAt: FieldValue.serverTimestamp() }).catch(() => undefined);
     },
 
-    async countAll() {
-        return (await col(COLLECTION).where('deletedAt', '==', null).count().get()).data().count;
+    async countAll(startDate?: string, endDate?: string) {
+        let query: any = col(COLLECTION).where('deletedAt', '==', null);
+        if (startDate) query = query.where('createdAt', '>=', Timestamp.fromDate(new Date(startDate)));
+        if (endDate) query = query.where('createdAt', '<=', Timestamp.fromDate(new Date(endDate)));
+        return (await query.count().get()).data().count;
     },
 };

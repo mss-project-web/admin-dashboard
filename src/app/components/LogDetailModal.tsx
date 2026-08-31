@@ -37,9 +37,16 @@ export const LogDetailModal = ({ isOpen, onClose, log }: LogDetailModalProps) =>
                     {/* Key Info Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">User Info</label>
-                            <div className="font-medium text-slate-900 dark:text-white break-all">{log.details?.email || 'Anonymous'}</div>
-                            <div className="text-xs text-slate-500 mt-1">{log.ip}</div>
+                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">ผู้ใช้งาน</label>
+                            {log._user ? (
+                                <>
+                                    <div className="font-bold text-slate-900 dark:text-white">{log._user.firstName} {log._user.lastName}</div>
+                                    <div className="text-xs text-slate-500 mt-0.5 break-all">{log._user.email}</div>
+                                </>
+                            ) : (
+                                <div className="font-medium text-slate-900 dark:text-white break-all">{log.details?.email || 'Anonymous'}</div>
+                            )}
+                            <div className="text-xs text-slate-400 font-mono mt-1">{log.ip}</div>
                         </div>
                         <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Action</label>

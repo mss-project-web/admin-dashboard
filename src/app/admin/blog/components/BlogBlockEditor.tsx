@@ -9,14 +9,17 @@ import {
 import Image from "next/image";
 import { blogService } from "@/services/blogService";
 import { useToast } from "@/hooks/use-toast";
-import RichTextEditor from "./RichTextEditor";
+import dynamic from "next/dynamic";
+
+const RichTextEditor = dynamic(() => import("./RichTextEditor"), { ssr: false, loading: () => <div className="p-4 text-center text-sm text-slate-500">กำลังโหลด...</div> });
 
 interface BlogBlockEditorProps {
     blocks: BlogContentBlock[];
     onChange: (blocks: BlogContentBlock[]) => void;
+    onImageDelete?: (url: string) => void;
 }
 
-export default function BlogBlockEditor({ blocks, onChange }: BlogBlockEditorProps) {
+export default function BlogBlockEditor({ blocks, onChange, onImageDelete }: BlogBlockEditorProps) {
     const { toast } = useToast();
     const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
 
@@ -28,6 +31,10 @@ export default function BlogBlockEditor({ blocks, onChange }: BlogBlockEditorPro
     };
 
     const removeBlock = (index: number) => {
+        const block = blocks[index];
+        if (block.type === 'image' && (block.data as any)?.url) {
+            onImageDelete?.((block.data as any).url);
+        }
         const newBlocks = [...blocks];
         newBlocks.splice(index, 1);
         onChange(newBlocks);
@@ -56,6 +63,9 @@ export default function BlogBlockEditor({ blocks, onChange }: BlogBlockEditorPro
         try {
             const result = await blogService.uploadImage(file);
             const currentData = blocks[index].data as { url: string; caption: string };
+            if (currentData.url) {
+                onImageDelete?.(currentData.url);
+            }
             updateBlockData(index, { ...currentData, url: result.url });
         } catch (error) {
             console.error(error);
@@ -138,7 +148,11 @@ export default function BlogBlockEditor({ blocks, onChange }: BlogBlockEditorPro
                                                 />
                                                 <button
                                                     type="button"
-                                                    onClick={() => updateBlockData(index, { ...(block.data as any), url: '' })}
+                                                    onClick={() => {
+                                                        const url = (block.data as any).url;
+                                                        if (url) onImageDelete?.(url);
+                                                        updateBlockData(index, { ...(block.data as any), url: '' });
+                                                    }}
                                                     className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-rose-500 transition-colors"
                                                 >
                                                     <X size={14} />

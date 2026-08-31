@@ -11,6 +11,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
 
 import { Suspense } from "react";
+import Link from "next/link";
 
 function LoginForm() {
     const router = useRouter();
@@ -165,8 +166,8 @@ function LoginForm() {
 
             toastUtils.success("ยินดีต้อนรับ", "เข้าสู่ระบบสำเร็จ", { duration: 2000 });
 
-            // Allow toast to show briefly or just push (Next.js toast usually persists across simple push if layout doesn't unmount toaster)
-            router.push("/menu");
+            // Force hard navigation to clear Next.js client-side router cache
+            window.location.href = "/menu";
 
         } catch (err: any) {
 
@@ -249,15 +250,10 @@ function LoginForm() {
                                 name="password"
                                 type={showPassword ? "text" : "password"}
                                 required
-                                maxLength={15}
                                 disabled={isLocked || loading}
-                                pattern="^[A-Za-z0-9@#$%^&+=!]*$"
-                                placeholder="Password (ไม่เกิน 15 ตัวอักษร)"
+                                placeholder="Password"
                                 value={password}
-                                onChange={(e) => {
-                                    const value = e.target.value.slice(0, 15);
-                                    setPassword(value);
-                                }}
+                                onChange={(e) => setPassword(e.target.value)}
                                 className="w-full rounded-xl border border-sky-200 dark:border-slate-800
                                     px-4 py-3 pr-15 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500
                                     dark:bg-slate-950
@@ -278,6 +274,15 @@ function LoginForm() {
                                     <Eye className="h-5 w-5" />
                                 )}
                             </button>
+                        </div>
+                        
+                        <div className="flex items-center justify-end mt-2">
+                            <Link 
+                                href="/auth/forgot-password" 
+                                className="text-sm font-medium text-sky-600 hover:text-sky-500 dark:text-sky-400 dark:hover:text-sky-300 transition-colors"
+                            >
+                                ลืมรหัสผ่าน?
+                            </Link>
                         </div>
                     </div>
 

@@ -47,7 +47,12 @@ export function getDb(): Firestore {
     // module cache resets while the underlying instance persists, so tolerate
     // the "already initialized" error instead of crashing every request.
     try {
-        firestore.settings({ ignoreUndefinedProperties: true });
+        firestore.settings({
+            ignoreUndefinedProperties: true,
+            // REST avoids gRPC connection stalls in restricted networks and
+            // works reliably in local, CI, and serverless environments.
+            preferRest: process.env.FIRESTORE_PREFER_REST !== 'false',
+        });
     } catch {
         /* settings already applied on this instance */
     }

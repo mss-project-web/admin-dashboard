@@ -1,7 +1,16 @@
 import 'server-only';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
-import sharp from 'sharp';
+
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+let sharp: any = null;
+try {
+    sharp = require('sharp');
+} catch (e) {
+    console.warn('⚠️ Sharp module failed to load. Image optimization will be bypassed. (Expected on Windows with Node 26+)');
+}
 
 /**
  * Cloudflare R2 storage (S3-compatible), ported from the NestJS CloudflareService.
@@ -23,17 +32,22 @@ function s3(): S3Client {
     return client;
 }
 
-/** Upload an image buffer as WebP, returns the public URL. */
+/** Upload an image buffer as WebP (if sharp is available), returns the public URL. */
 export async function uploadImage(buffer: Buffer): Promise<string> {
-    const key = `${uuidv4()}.webp`;
-    const webp = await sharp(buffer).webp({ quality: 100 }).toBuffer();
+    if (buffer.byteLength === 0 || buffer.byteLength > MAX_IMAGE_BYTES) {
+        throw new Error('Image must be between 1 byte and 10 MB');
+    }
+    const isSharpAvailable = !!sharp;
+    const key = `${uuidv4()}.${isSharpAvailable ? 'webp' : 'jpg'}`;
+    const body = isSharpAvailable ? await sharp(buffer).webp({ quality: 100 }).toBuffer() : buffer;
+    const contentType = isSharpAvailable ? 'image/webp' : 'image/jpeg';
 
     await s3().send(
         new PutObjectCommand({
             Bucket: process.env.R2_BUCKET,
             Key: key,
-            Body: webp,
-            ContentType: 'image/webp',
+            Body: body,
+            ContentType: contentType,
         }),
     );
 
@@ -42,6 +56,8 @@ export async function uploadImage(buffer: Buffer): Promise<string> {
 
 /** Convenience helper for a Web API File (from route handler formData). */
 export async function uploadFile(file: File): Promise<string> {
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) throw new Error('Unsupported image type');
+    if (file.size === 0 || file.size > MAX_IMAGE_BYTES) throw new Error('Image must be between 1 byte and 10 MB');
     const buffer = Buffer.from(await file.arrayBuffer());
     return uploadImage(buffer);
 }

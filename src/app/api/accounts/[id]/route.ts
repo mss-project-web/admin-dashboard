@@ -10,6 +10,7 @@ const updateSchema = z.object({
     phoneNumber: z.string().optional(),
     password: z.string().min(1).optional(),
     role: z.enum(['user', 'admin', 'superadmin']).optional(),
+    departments: z.array(z.string()).optional(),
 });
 
 export const GET = handle(async (_req, { params }) => {

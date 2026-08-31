@@ -2,31 +2,27 @@ import { LucideIcon } from "lucide-react";
 
 interface StatsCardProps {
   label: string;
-  value: string;
+  value: string | number;
   icon: LucideIcon;
-  trend: string;
-  colorClass: string;
-  bgClass: string;
+  trend?: never;
+  colorClass?: string;
+  bgClass?: string;
 }
 
-export const StatsCard = ({ label, value, icon: Icon, trend, colorClass, bgClass }: StatsCardProps) => (
-  <div className="group relative overflow-hidden rounded-[2rem] border border-sky-100/50 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 p-6 shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-sky-100/50 dark:hover:shadow-sky-900/20">
-    <div className={`absolute -right-6 -top-6 h-24 w-24 rounded-full ${bgClass} opacity-20 blur-2xl group-hover:scale-150 transition-transform duration-500`} />
-
-    <div className="relative flex items-center justify-between mb-4">
-      <div className={`rounded-2xl ${bgClass} p-3.5 transition-colors duration-300 group-hover:bg-white dark:group-hover:bg-slate-800`}>
-        <Icon className={`h-6 w-6 ${colorClass}`} />
+export const StatsCard = ({ label, value, icon: Icon }: StatsCardProps) => (
+  <div className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-950">
+    <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-500 to-cyan-400" aria-hidden="true" />
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="truncate text-xs font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{label}</p>
+        <h3 className="mt-3 text-2xl font-bold tracking-tight tabular-nums text-slate-950 sm:text-3xl dark:text-white">
+          {typeof value === "number" ? value.toLocaleString() : value}
+        </h3>
+        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Total records</p>
       </div>
-      {trend && (
-        <span className="text-xs font-bold text-sky-600 bg-sky-50 dark:bg-sky-500/10 px-2.5 py-1 rounded-full border border-sky-100 dark:border-sky-500/20">
-          {trend}
-        </span>
-      )}
-    </div>
-
-    <div className="relative">
-      <p className="text-sm text-slate-500 dark:text-slate-400 font-medium tracking-wide">{label}</p>
-      <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1 tracking-tight">{value}</h3>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 transition-colors group-hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-900/50 dark:group-hover:bg-blue-900/60">
+        <Icon className="h-5 w-5" aria-hidden="true" />
+      </div>
     </div>
   </div>
 );

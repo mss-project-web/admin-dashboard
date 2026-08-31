@@ -16,11 +16,15 @@ export async function getSession(): Promise<User | null> {
         let firstName = "Admin";
         let lastName = "";
         let phoneNumber = "";
+        let mustChangePassword = false;
+        let departments: string[] = [];
         try {
             const acc = (await accountRepo.findOne(uid)) as unknown as Partial<User>;
             firstName = acc.firstName ?? firstName;
             lastName = acc.lastName ?? lastName;
             phoneNumber = acc.phoneNumber ?? phoneNumber;
+            mustChangePassword = acc.mustChangePassword ?? false;
+            departments = acc.departments ?? [];
         } catch {
             /* profile doc missing — fall back to token claims */
         }
@@ -32,6 +36,8 @@ export async function getSession(): Promise<User | null> {
             firstName,
             lastName,
             phoneNumber,
+            mustChangePassword,
+            departments,
         } as User;
     } catch {
         return null;

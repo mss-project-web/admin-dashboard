@@ -38,6 +38,31 @@ export async function signInWithPassword(email: string, password: string): Promi
     return { idToken: data.idToken as string, uid: data.localId as string };
 }
 
+const OOB_CODE_URL = 'https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode';
+
+/** Send a password reset email via Firebase Identity Toolkit. */
+export async function sendPasswordResetEmail(email: string): Promise<void> {
+    const apiKey = process.env.FIREBASE_API_KEY;
+    if (!apiKey) throw new Error('FIREBASE_API_KEY is not configured');
+
+    const res = await fetch(`${OOB_CODE_URL}?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, requestType: 'PASSWORD_RESET' }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+        const code: string = data?.error?.message || '';
+        if (code.startsWith('EMAIL_NOT_FOUND')) {
+            // Return the same public response as a valid address to prevent
+            // account/email enumeration.
+            return;
+        }
+        throw new ApiError('Failed to send password reset email', 500);
+    }
+}
+
 export async function createSessionCookie(idToken: string): Promise<{ cookie: string; expiresInMs: number }> {
     const days = Math.min(Number(process.env.SESSION_DAYS) || 5, 14);
     const expiresInMs = days * 24 * 60 * 60 * 1000;
@@ -47,6 +72,8 @@ export async function createSessionCookie(idToken: string): Promise<{ cookie: st
 
 /** Verify a session cookie and return the user + role claim. */
 export async function verifySession(cookie: string): Promise<SessionUser> {
+    // Check revocation so logout, password reset, disable and role changes
+    // invalidate previously issued session cookies.
     const decoded = await getAdminAuth().verifySessionCookie(cookie, true);
     return {
         uid: decoded.uid,

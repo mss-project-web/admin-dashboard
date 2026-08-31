@@ -5,7 +5,7 @@ interface ContentDistributionChartProps {
     data: any[];
 }
 
-const COLORS = ['#0ea5e9', '#6366f1', '#f43f5e', '#10b981', '#f59e0b'];
+const COLORS = ['#1e3a8a', '#1d4ed8', '#3b82f6', '#93c5fd', '#64748b'];
 
 export const ContentDistributionChart = ({ data }: ContentDistributionChartProps) => {
     return (
@@ -14,10 +14,11 @@ export const ContentDistributionChart = ({ data }: ContentDistributionChartProps
                 <PieChart>
                     <Pie
                         data={data}
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
+                        innerRadius={65}
+                        outerRadius={90}
+                        paddingAngle={3}
                         dataKey="value"
+                        stroke="none"
                     >
                         {data.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -25,20 +26,24 @@ export const ContentDistributionChart = ({ data }: ContentDistributionChartProps
                     </Pie>
                     <Tooltip
                         contentStyle={{
-                            borderRadius: '16px',
-                            border: 'none',
-                            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                            backdropFilter: 'blur(4px)',
+                            borderRadius: '12px',
+                            border: '1px solid #f1f5f9',
+                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+                            backgroundColor: '#ffffff',
                             padding: '8px 12px'
                         }}
-                        itemStyle={{ color: '#1e293b', fontWeight: 600, fontSize: '13px' }}
+                        itemStyle={{ color: '#0f172a', fontWeight: 700, fontSize: '14px' }}
                     />
                     <Legend
-                        verticalAlign="bottom"
-                        height={36}
+                        layout="vertical"
+                        verticalAlign="middle"
+                        align="left"
                         iconType="circle"
-                        formatter={(value) => <span style={{ color: '#64748b', fontSize: '12px', fontWeight: 500 }}>{value}</span>}
+                        formatter={(value, entry: any) => (
+                            <span style={{ color: '#475569', fontSize: '13px', fontWeight: 600, marginLeft: '4px' }}>
+                                {value} <span style={{ color: '#94a3b8', marginLeft: '4px' }}>{entry.payload?.value}</span>
+                            </span>
+                        )}
                     />
                 </PieChart>
             </ResponsiveContainer>

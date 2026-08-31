@@ -8,7 +8,8 @@ const updateSchema = z.object({
     firstName: z.string().optional(),
     lastName: z.string().optional(),
     phoneNumber: z.string().optional(),
-    password: z.string().min(1).optional(),
+    password: z.string().min(6).optional(),
+    currentPassword: z.string().optional(),
 });
 
 export const GET = handle(async () => {
@@ -20,7 +21,20 @@ export const GET = handle(async () => {
 export const PUT = handle(async (req) => {
     const user = await requireAuth();
     const dto = updateSchema.parse(await req.json()); // role intentionally not allowed here
-    const account = await accountRepo.update(user.sub, dto);
+    
+    const accountProfile = await accountRepo.findOne(user.sub);
+    const updatePayload: any = { ...dto };
+    if (dto.password) {
+        if (!accountProfile.mustChangePassword) {
+            if (!dto.currentPassword) throw BadRequest('Current password is required to change password');
+            if (!(await accountRepo.verifyPassword(user.sub, dto.currentPassword))) {
+                throw BadRequest('รหัสผ่านปัจจุบันไม่ถูกต้อง');
+            }
+        }
+        updatePayload.mustChangePassword = false;
+    }
+    
+    const account = await accountRepo.update(user.sub, updatePayload);
     return ok(account, 'Update profile successfully');
 });
 

@@ -9,8 +9,9 @@ import { prayerRoomService } from "@/services/prayerRoomService";
 import { PrayerRoom } from "@/types/prayer-room";
 import Image from "next/image";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-import PrayerRoomModal from "./components/PrayerRoomModal";
 import DeleteModal from "@/app/components/ui/DeleteModal";
 import { Pagination, PaginationInfo } from "@/app/components/ui/Pagination";
 import { TableSkeleton } from "@/app/components/ui/TableSkeleton";
@@ -30,8 +31,6 @@ export default function PrayerRoomsPage() {
     const [sortConfig, setSortConfig] = useState<{ key: keyof PrayerRoom; direction: 'asc' | 'desc' | null }>({ key: 'name', direction: 'asc' });
 
     // Modal States
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedPrayerRoom, setSelectedPrayerRoom] = useState<PrayerRoom | null>(null);
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [prayerRoomToDelete, setPrayerRoomToDelete] = useState<PrayerRoom | null>(null);
@@ -54,14 +53,10 @@ export default function PrayerRoomsPage() {
         fetchPrayerRooms();
     }, [refreshKey]);
 
-    const handleAddClick = () => {
-        setSelectedPrayerRoom(null);
-        setIsModalOpen(true);
-    };
+    const router = useRouter();
 
-    const handleEditClick = (room: PrayerRoom) => {
-        setSelectedPrayerRoom(room);
-        setIsModalOpen(true);
+    const handleAddClick = () => {
+        router.push('/admin/prayer-rooms/create');
     };
 
     const handleDeleteClick = (room: PrayerRoom) => {
@@ -119,12 +114,6 @@ export default function PrayerRoomsPage() {
 
     return (
         <div className="w-full space-y-4 pb-32">
-            <PrayerRoomModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSuccess={() => { setRefreshKey(prev => prev + 1); setIsModalOpen(false); }}
-                prayerRoomToEdit={selectedPrayerRoom}
-            />
 
             <DeleteModal
                 isOpen={isDeleteModalOpen}
@@ -173,6 +162,7 @@ export default function PrayerRoomsPage() {
                     <table className="w-full text-left border-collapse table-fixed min-w-[950px]">
                         <thead className="z-20 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
                             <tr>
+                                <TableHeader label="#" className="w-16 text-center" />
                                 <TableHeader label="รูปภาพ" className="w-20 text-center" />
                                 <SortableHeader label="ชื่อห้องละหมาด" sortKey="name" currentSort={sortConfig} onSort={requestSort} className="w-1/5" />
                                 <SortableHeader label="สถานที่ตั้ง" sortKey="place" currentSort={sortConfig} onSort={requestSort} className="w-[20%]" />
@@ -198,6 +188,9 @@ export default function PrayerRoomsPage() {
                                         key={room._id}
                                         className={`group transition-colors ${index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-[#f8fafc] dark:bg-[#0f172a]'} hover:bg-emerald-50`}
                                     >
+                                        <td className="px-4 py-4 text-center font-medium text-slate-500">
+                                            {((currentPage - 1) * itemsPerPage) + index + 1}
+                                        </td>
                                         <td className="px-6 py-4">
                                             <div className="h-10 w-16 relative rounded-md overflow-hidden bg-slate-100 border border-slate-200">
                                                 {room.images && room.images.length > 0 ? (
@@ -240,7 +233,7 @@ export default function PrayerRoomsPage() {
                                         </td>
                                         <td className={`px-6 py-4 text-right pr-8 sticky right-0 z-10 border-l border-slate-100 transition-colors shadow-[-4px_0_10px_rgba(0,0,0,0.02)] ${index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50 dark:bg-slate-900'} group-hover:bg-emerald-50 dark:group-hover:bg-slate-800`}>
                                             <div className="flex justify-end gap-1.5 relative z-20">
-                                                <button onClick={() => handleEditClick(room)} className="cursor-pointer p-1.5 text-sky-600 hover:bg-white rounded shadow-sm border border-transparent hover:border-sky-100 transition-all"><Edit2 size={14} /></button>
+                                                <Link href={`/admin/prayer-rooms/edit/${room._id}`} className="cursor-pointer p-1.5 text-sky-600 hover:bg-white rounded shadow-sm border border-transparent hover:border-sky-100 transition-all"><Edit2 size={14} /></Link>
                                                 <button onClick={() => handleDeleteClick(room)} className="cursor-pointer p-1.5 text-rose-500 hover:bg-rose-50 rounded transition-all"><Trash2 size={14} /></button>
                                             </div>
                                         </td>

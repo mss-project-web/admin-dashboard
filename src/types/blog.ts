@@ -18,6 +18,8 @@ export interface BlogPost {
     content?: BlogContentBlock[] | string;
     tags?: string[];
     group?: string | BlogGroup;
+    series?: { name: string; order: number };
+    referenceUrl?: string;
     coverImage?: string;
     images?: string[];
     author?: { id: string; name: string };

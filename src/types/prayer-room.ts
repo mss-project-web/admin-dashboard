@@ -1,6 +1,9 @@
 export interface PrayerRoom {
     _id: string;
+    slug?: string;
     name: string;
+    name_th?: string;
+    name_en?: string;
     place: string;
     detail: string;
     faculty?: string;

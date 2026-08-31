@@ -21,7 +21,7 @@ export function ThemeToggle() {
 
     if (!mounted) {
         return (
-            <button className="p-2 rounded-lg text-slate-400 opacity-50 cursor-default">
+            <button type="button" aria-label="Toggle theme" className="p-2 rounded-lg text-slate-400 opacity-50 cursor-default">
                 <Sun className="h-5 w-5" />
             </button>
         ); // Placeholder to avoid layout shift

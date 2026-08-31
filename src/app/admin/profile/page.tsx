@@ -15,6 +15,12 @@ export default function ProfilePage() {
     const [lastName, setLastName] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
 
+    // Password fields
+    const [isChangePassword, setIsChangePassword] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+
     useEffect(() => {
         const fetchProfile = async () => {
             try {
@@ -23,6 +29,10 @@ export default function ProfilePage() {
                 setFirstName(me.firstName || "");
                 setLastName(me.lastName || "");
                 setPhoneNumber(me.phoneNumber || "");
+                setIsChangePassword(false);
+                setCurrentPassword("");
+                setNewPassword("");
+                setConfirmPassword("");
             } catch {
                 toast({ title: "เกิดข้อผิดพลาด", description: "ไม่สามารถโหลดข้อมูลโปรไฟล์ได้", variant: "destructive" });
             } finally {
@@ -33,13 +43,29 @@ export default function ProfilePage() {
     }, []);
 
     const handleSave = async () => {
+        if (isChangePassword) {
+            if (!currentPassword) return toast({ title: "ผิดพลาด", description: "กรุณาระบุรหัสผ่านปัจจุบัน", variant: "destructive" });
+            if (newPassword.length < 6) return toast({ title: "ผิดพลาด", description: "รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร", variant: "destructive" });
+            if (newPassword !== confirmPassword) return toast({ title: "ผิดพลาด", description: "การยืนยันรหัสผ่านไม่ตรงกัน", variant: "destructive" });
+        }
+        
         try {
             setSaving(true);
-            const updated = await userService.updateMe({ firstName, lastName, phoneNumber });
+            const payload: any = { firstName, lastName, phoneNumber };
+            if (isChangePassword) {
+                payload.currentPassword = currentPassword;
+                payload.password = newPassword;
+            }
+            const updated = await userService.updateMyProfile(payload);
             setUser(updated);
             toast({ title: "สำเร็จ", description: "อัปเดตโปรไฟล์เรียบร้อยแล้ว" });
-        } catch {
-            toast({ title: "เกิดข้อผิดพลาด", description: "ไม่สามารถอัปเดตโปรไฟล์ได้", variant: "destructive" });
+            setIsChangePassword(false);
+            setCurrentPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
+        } catch (error: any) {
+            const errorMsg = error?.response?.data?.message || "ไม่สามารถอัปเดตโปรไฟล์ได้";
+            toast({ title: "เกิดข้อผิดพลาด", description: errorMsg, variant: "destructive" });
         } finally {
             setSaving(false);
         }
@@ -176,6 +202,56 @@ export default function ProfilePage() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Password change toggle */}
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <label className="flex items-center gap-2 cursor-pointer mb-4">
+                            <input 
+                                type="checkbox" 
+                                checked={isChangePassword}
+                                onChange={(e) => setIsChangePassword(e.target.checked)}
+                                className="rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+                            />
+                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">เปลี่ยนรหัสผ่าน</span>
+                        </label>
+                        
+                        {isChangePassword && (
+                            <div className="space-y-4 bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1.5">รหัสผ่านปัจจุบัน</label>
+                                    <input
+                                        type="password"
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500/50"
+                                        placeholder="••••••••"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 mb-1.5">รหัสผ่านใหม่ (อย่างน้อย 6 ตัว)</label>
+                                        <input
+                                            type="password"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            className="w-full px-4 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500/50"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 mb-1.5">ยืนยันรหัสผ่านใหม่</label>
+                                        <input
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="w-full px-4 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500/50"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

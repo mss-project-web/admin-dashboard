@@ -1,39 +1,40 @@
 import api from "@/lib/axios";
 import { News } from "@/types/news";
 import { createFormDataForUpdate } from '@/lib/api-utils';
+import { ApiEnvelope, unwrapResponse } from '@/lib/axios/types';
 
 export const newsService = {
     getAll: async () => {
-        const response = await api.get<{ status: string; data: { status: string; data: News[] } }>("/news/");
-        return response.data.data.data;
+        const response = await api.get<ApiEnvelope<News[]>>("/news/");
+        return unwrapResponse(response);
     },
 
     getById: async (id: string) => {
-        const response = await api.get<{ status: string; data: { status: string; data: News } }>(`/news/${id}`);
-        return response.data.data.data;
+        const response = await api.get<ApiEnvelope<News>>(`/news/${id}`);
+        return unwrapResponse(response);
     },
 
     create: async (data: FormData) => {
-        const response = await api.post("/news/", data, {
+        const response = await api.post<ApiEnvelope<News>>("/news/", data, {
             headers: {
                 "Content-Type": "multipart/form-data",
             },
         });
-        return response.data;
+        return unwrapResponse(response);
     },
 
     update: async (id: string, data: any, newImages?: File[], deletedImageUrls?: string[]) => {
         const formData = createFormDataForUpdate(data, newImages, deletedImageUrls);
-        const response = await api.patch(`/news/${id}`, formData, {
+        const response = await api.patch<ApiEnvelope<News>>(`/news/${id}`, formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
             },
         });
-        return response.data;
+        return unwrapResponse(response);
     },
 
     delete: async (id: string) => {
-        const response = await api.delete(`/news/${id}`);
-        return response.data;
+        const response = await api.delete<ApiEnvelope<null>>(`/news/${id}`);
+        return unwrapResponse(response);
     },
 };

@@ -1,52 +1,28 @@
 import api from '@/lib/axios';
-import { User, UserResponse } from '@/types/user';
+import { ApiEnvelope, unwrapResponse } from '@/lib/axios/types';
+import { User } from '@/types/user';
+
+interface PaginatedUsers {
+    data: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+}
 
 export const userService = {
-    getUsers: async () => {
-        const response = await api.get<UserResponse>('/accounts');
-        return response.data.data;
+    getUsers: async (page = 1, limit = 20, search?: string) => {
+        const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+        if (search) params.append('search', search);
+        return unwrapResponse(await api.get<ApiEnvelope<PaginatedUsers>>(`/accounts?${params.toString()}`));
     },
-
-    getUser: async (id: string) => {
-        const response = await api.get<{ status: string, data: User } | User>(`/accounts/${id}`);
-        console.log("getUser response:", response.data); // Debug log
-        if ('data' in response.data && response.data.data) {
-            return response.data.data;
-        }
-        return response.data as User;
-    },
-
-    createUser: async (data: Partial<User>) => {
-        const response = await api.post<{ status: string, data: User }>('/accounts', data);
-        // Check if data is nested in data.data or just data
-        if ('data' in response.data && response.data.data) {
-            return response.data.data;
-        }
-        return response.data as any as User;
-    },
-
-    updateUser: async (id: string, data: Partial<User>) => {
-        const response = await api.put<{ status: string, data: User }>(`/accounts/${id}`, data);
-        return response.data.data;
-    },
-
-    updateUserRole: async (id: string, role: string) => {
-        const response = await api.patch<{ status: string, data: User }>(`/accounts/${id}/role`, { role });
-        return response.data.data;
-    },
-
-    getMe: async () => {
-        const response = await api.get<{ status: string, data: User }>('/accounts/me');
-        return response.data.data;
-    },
-
-    updateMe: async (data: Partial<Pick<User, 'firstName' | 'lastName' | 'phoneNumber'>>) => {
-        const response = await api.put<{ status: string, data: User }>('/accounts/me', data);
-        return response.data.data;
-    },
-
-    deleteUser: async (id: string) => {
-        const response = await api.delete<{ status: string, message: string }>(`/accounts/${id}`);
-        return response.data;
-    }
+    getUser: async (id: string) => unwrapResponse(await api.get<ApiEnvelope<User>>(`/accounts/${id}`)),
+    createUser: async (data: Partial<User>) => unwrapResponse(await api.post<ApiEnvelope<User>>('/accounts', data)),
+    updateUser: async (id: string, data: Partial<User>) => unwrapResponse(await api.put<ApiEnvelope<User>>(`/accounts/${id}`, data)),
+    updateUserRole: async (id: string, role: string) => unwrapResponse(await api.patch<ApiEnvelope<User>>(`/accounts/${id}/role`, { role })),
+    resetUserPassword: async (id: string) => unwrapResponse(await api.post<ApiEnvelope<{ tempPassword: string }>>(`/accounts/${id}/reset-password`)),
+    updateMyProfile: async (data: Partial<User> & { currentPassword?: string; password?: string }) => unwrapResponse(await api.put<ApiEnvelope<User>>('/accounts/me', data)),
+    getMe: async () => unwrapResponse(await api.get<ApiEnvelope<User>>('/accounts/me')),
+    updateMe: async (data: Partial<Pick<User, 'firstName' | 'lastName' | 'phoneNumber'>>) => unwrapResponse(await api.put<ApiEnvelope<User>>('/accounts/me', data)),
+    deleteUser: async (id: string) => unwrapResponse(await api.delete<ApiEnvelope<null>>(`/accounts/${id}`)),
 };

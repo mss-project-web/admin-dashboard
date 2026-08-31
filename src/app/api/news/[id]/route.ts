@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
-import { handle, ok, okNested } from '@/lib/http/response';
-import { requireRole, Role } from '@/lib/auth/guard';
+import { handle, ok } from '@/lib/http/response';
+import { requireMenuPermission } from '@/lib/auth/guard';
 import { newsRepo } from '@/lib/repositories/newsRepo';
 import { uploadFile } from '@/lib/storage/r2';
 
@@ -14,11 +14,11 @@ export const GET = handle(async (_req, { params }) => {
     if (!hasViewed) {
         store.set(cookieName, 'true', { maxAge: 60 * 60, httpOnly: true, path: '/' });
     }
-    return okNested(data, 'Fetched news by ID');
+    return ok(data, 'Fetched news by ID');
 });
 
 export const PATCH = handle(async (req, { params }) => {
-    await requireRole(Role.ADMIN, Role.SUPERADMIN);
+    await requireMenuPermission('/admin/news');
     const { id } = await params;
     const form = await req.formData();
 
@@ -52,12 +52,12 @@ export const PATCH = handle(async (req, { params }) => {
         newImages,
         deleteImages,
     );
-    return okNested(updated, 'News updated successfully');
+    return ok(updated, 'News updated successfully');
 });
 
 export const DELETE = handle(async (_req, { params }) => {
-    await requireRole(Role.ADMIN, Role.SUPERADMIN);
+    await requireMenuPermission('/admin/news');
     const { id } = await params;
     await newsRepo.remove(id);
-    return ok({ status: 'success', message: 'News deleted successfully' }, 'OK');
+    return ok(null, 'News deleted successfully');
 });

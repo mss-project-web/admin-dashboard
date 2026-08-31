@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { handle, ok } from '@/lib/http/response';
-import { requireRole, Role } from '@/lib/auth/guard';
+import { requireMenuPermission } from '@/lib/auth/guard';
 import { blogRepo } from '@/lib/repositories/blogRepo';
 
 const createSchema = z.object({
@@ -10,13 +10,15 @@ const createSchema = z.object({
     tags: z.array(z.string()).optional(),
     author: z.string().optional(),
     group: z.string(),
+    series: z.object({ name: z.string(), order: z.number() }).nullable().optional(),
+    referenceUrl: z.string().optional(),
     slug: z.string().optional(),
     status: z.enum(['draft', 'published']).optional(),
     coverImage: z.string().optional(),
 });
 
 export const POST = handle(async (req) => {
-    await requireRole(Role.ADMIN, Role.SUPERADMIN);
+    await requireMenuPermission('/admin/blog/content');
     const dto = createSchema.parse(await req.json());
     const blog = await blogRepo.create(dto);
     return ok(blog, 'Blog created successfully', 201);

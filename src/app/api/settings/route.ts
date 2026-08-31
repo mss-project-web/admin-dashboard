@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { handle, ok } from '@/lib/http/response';
-import { requireRole, Role } from '@/lib/auth/guard';
+import { requireMenuPermission } from '@/lib/auth/guard';
 import { settingsRepo } from '@/lib/repositories/settingsRepo';
 
 const schema = z.object({
@@ -37,7 +37,7 @@ export const GET = handle(async () => {
 });
 
 export const PUT = handle(async (req) => {
-    await requireRole(Role.ADMIN, Role.SUPERADMIN);
+    await requireMenuPermission('/admin/settings');
     const data = schema.parse(await req.json());
     const updated = await settingsRepo.update(data);
     return ok(updated, 'Site settings updated');

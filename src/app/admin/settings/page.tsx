@@ -7,6 +7,7 @@ import {
     Facebook, Instagram, Youtube, Upload,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
+import { FormSkeleton } from "@/app/components/ui/FormSkeleton";
 import { toastUtils } from "@/lib/toast";
 import { settingsService, SiteSettings } from "@/services/settingsService";
 
@@ -81,11 +82,7 @@ export default function SettingsPage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <Loader2 className="animate-spin text-sky-500" size={32} />
-            </div>
-        );
+        return <FormSkeleton />;
     }
 
     return (

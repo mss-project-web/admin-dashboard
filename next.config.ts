@@ -13,12 +13,19 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'pub-853ef1e3196d47079694e9c281ce8748.r2.dev',
-        port: '',
-        pathname: '/**',
+        hostname: '**.r2.dev',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.fbcdn.net',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.facebook.com',
       },
     ],
   },
 };
 
 export default nextConfig;
+

@@ -1,7 +1,8 @@
-import { handle, ok, okNested, BadRequest } from '@/lib/http/response';
-import { requireRole, Role } from '@/lib/auth/guard';
+import { handle, ok, BadRequest } from '@/lib/http/response';
+import { requireMenuPermission } from '@/lib/auth/guard';
 import { newsRepo } from '@/lib/repositories/newsRepo';
 import { uploadFile } from '@/lib/storage/r2';
+import { withCache } from '@/lib/cache';
 
 export const GET = handle(async (req) => {
     const { searchParams } = new URL(req.url);
@@ -14,16 +15,17 @@ export const GET = handle(async (req) => {
         if (isNaN(month) || isNaN(year) || month < 1 || month > 12) {
             throw BadRequest('Invalid month or year parameter');
         }
-        const data = await newsRepo.getNewsByMonthAndYear(month, year);
-        return okNested(data, `Fetched news for ${month}/${year}`);
+        const cacheKey = `api_news_${month}_${year}`;
+        const data = await withCache(cacheKey, 120000, () => newsRepo.getNewsByMonthAndYear(month, year));
+        return ok(data, `Fetched news for ${month}/${year}`);
     }
 
-    const data = await newsRepo.findAll();
-    return okNested(data, 'Fetched all news');
+    const data = await withCache('api_news_all', 120000, () => newsRepo.findAll());
+    return ok(data, 'Fetched all news');
 });
 
 export const POST = handle(async (req) => {
-    await requireRole(Role.ADMIN, Role.SUPERADMIN);
+    await requireMenuPermission('/admin/news');
     const form = await req.formData();
 
     const files = form.getAll('images').filter((f): f is File => f instanceof File);

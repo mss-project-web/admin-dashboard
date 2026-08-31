@@ -1,10 +1,11 @@
 import api from "@/lib/axios";
+import { ApiEnvelope, unwrapResponse } from '@/lib/axios/types';
 
 export const systemLogsService = {
     getAll: async () => {
         try {
-            const response = await api.get('/system-logs');
-            const data = response?.data?.data || response?.data || [];
+            const response = await api.get<ApiEnvelope<Array<{ createdAt: string }>>>('/system-logs');
+            const data = unwrapResponse(response);
 
             // Sort by createdAt desc
             return Array.isArray(data) ? data.sort((a: any, b: any) =>

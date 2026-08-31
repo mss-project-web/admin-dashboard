@@ -1,10 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Users, Package, FileText, Newspaper, Globe, Eye, MousePointerClick } from "lucide-react";
+import { Users, Package, FileText, Newspaper, Globe, Eye, MousePointerClick, RefreshCw, AlertCircle } from "lucide-react";
 import { dashboardApi } from "@/lib/api/dashboard";
 import { StatsCard } from "@/app/components/chart/StatsCard";
 import { LoginActivityChart } from "@/app/components/chart/LoginActivityChart";
+import { SystemActivityChart } from "@/app/components/chart/SystemActivityChart";
 import { ContentDistributionChart } from "@/app/components/chart/ContentDistributionChart";
+import { ContentStatusChart } from "@/app/components/chart/ContentStatusChart";
+import { ActionDistributionChart } from "@/app/components/chart/ActionDistributionChart";
+import { TopAuthorsChart } from "@/app/components/chart/TopAuthorsChart";
+import { DashboardFilterBar } from "@/app/components/DashboardFilterBar";
 import { RecentLogsTable } from "@/app/components/RecentLogsTable";
 import { PopularContentList } from "@/app/components/PopularContentList";
 import { toastUtils } from "@/lib/toast";
@@ -12,68 +17,147 @@ import { useAuth } from "@/hooks/useAuth";
 
 import { Skeleton } from "@/app/components/ui/skeleton";
 
+type PopularGroups = {
+  activities: any[];
+  blogs: any[];
+  news: any[];
+};
+
+function normalizePopular(value: unknown): PopularGroups {
+  const data = value && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  return {
+    activities: Array.isArray(data.activities) ? data.activities : [],
+    blogs: Array.isArray(data.blogs) ? data.blogs : [],
+    news: Array.isArray(data.news) ? data.news : [],
+  };
+}
+
+function DashboardPanel({ title, error, retry, retrying, children }: { title?: string; error?: string; retry: () => void; retrying: boolean; children: React.ReactNode }) {
+  if (error) {
+    return (
+      <div className="flex min-h-[180px] flex-col items-center justify-center rounded-xl border border-rose-200 bg-rose-50 p-6 text-center dark:border-rose-900/50 dark:bg-rose-950/20">
+        <AlertCircle className="mb-2 h-6 w-6 text-rose-500" aria-hidden="true" />
+        {title && <h3 className="font-bold text-rose-700 dark:text-rose-400">{title}</h3>}
+        <p className="mt-1 text-sm text-rose-600 dark:text-rose-300">{error}</p>
+        <button type="button" onClick={retry} disabled={retrying} aria-label={`Retry ${title || "dashboard section"}`} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 disabled:opacity-60">
+          <RefreshCw size={15} className={retrying ? "animate-spin" : ""} aria-hidden="true" /> Retry
+        </button>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
+
 export default function AdminDashboard() {
   const { isSuperAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
   const [charts, setCharts] = useState<any>(null);
-  const [popular, setPopular] = useState<any[]>([]);
+  const [popular, setPopular] = useState<PopularGroups>({ activities: [], blogs: [], news: [] });
   const [logs, setLogs] = useState<any[]>([]);
   const [cloudflareAnalytics, setCloudflareAnalytics] = useState<any>(null);
+  const [sectionErrors, setSectionErrors] = useState<Record<string, string>>({});
+  const [retryingSection, setRetryingSection] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const promises = [
-          dashboardApi.getStats(),
-          dashboardApi.getCharts(),
-          dashboardApi.getPopularContent(),
-          dashboardApi.getRecentLogs()
-        ];
+  const [dateFilter, setDateFilter] = useState<{ start?: string; end?: string }>({});
+  const [filterReady, setFilterReady] = useState(false);
 
-        if (isSuperAdmin) {
-          promises.push(dashboardApi.getCloudflareAnalytics().catch(() => null));
-        }
+  // Stable string key so useEffect only fires when the actual dates change, not on reference change
+  const dateFilterKey = `${dateFilter.start ?? ''}|${dateFilter.end ?? ''}`;
 
-        const results = await Promise.all(promises);
-        const [statsRes, chartsRes, popularRes, logsRes, cloudflareRes] = results;
+  const fetchData = async (startDate?: string, endDate?: string) => {
+    setLoading(true);
+    setSectionErrors({});
+    try {
+      const corePromises = [
+        // Summary cards show the total inventory; date filters remain for charts.
+        dashboardApi.getSummary(),
+        dashboardApi.getDashboardCharts(startDate, endDate),
+        dashboardApi.getPopularContent(),
+        dashboardApi.getRecentLogsPage(),
+      ];
 
-        setStats(statsRes.data?.data || statsRes.data || statsRes);
-        setCharts(chartsRes.data?.data || chartsRes.data || chartsRes);
+      // Use allSettled so one failing endpoint doesn't block the others
+      const [statsRes, chartsRes, popularRes, logsRes] = await Promise.allSettled(corePromises);
 
-        const popularData = popularRes.data?.data?.activities || popularRes.data?.activities || popularRes.data || [];
-        setPopular(popularData);
+      if (statsRes.status === 'fulfilled') {
+        const d = statsRes.value as Record<string, unknown>;
+        setStats((d.totals as Record<string, unknown>) ?? d);
+      } else setSectionErrors((prev) => ({ ...prev, stats: "โหลดสถิติไม่สำเร็จ" }));
+      if (chartsRes.status === 'fulfilled') {
+        const d = chartsRes.value;
+        setCharts(d);
+      } else setSectionErrors((prev) => ({ ...prev, charts: "โหลดกราฟไม่สำเร็จ" }));
+      if (popularRes.status === 'fulfilled') {
+        const d = popularRes.value;
+        setPopular(normalizePopular(d));
+      } else setSectionErrors((prev) => ({ ...prev, popular: "โหลดเนื้อหายอดนิยมไม่สำเร็จ" }));
+      if (logsRes.status === 'fulfilled') {
+        const d = logsRes.value as { rows?: unknown[] };
+        setLogs((d.rows ?? []) as any[]);
+      } else setSectionErrors((prev) => ({ ...prev, logs: "โหลดบันทึกระบบไม่สำเร็จ" }));
 
-        const logsData = logsRes.data?.data || logsRes.data || [];
-        setLogs(logsData);
-
-        if (isSuperAdmin && cloudflareRes) {
-          setCloudflareAnalytics(cloudflareRes.data?.data || cloudflareRes.data || null);
-        }
-
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-        toastUtils.error("เกิดข้อผิดพลาด", "ไม่สามารถโหลดข้อมูล Dashboard ได้");
-      } finally {
-        setLoading(false);
+      if (isSuperAdmin) {
+        dashboardApi.getCloudflareAnalytics().then((res) => {
+          setCloudflareAnalytics(res);
+        }).catch(() => { /* Cloudflare quota errors are non-critical */ });
       }
-    };
 
-    fetchData();
-  }, [isSuperAdmin]);
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        {/* Header Skeleton */}
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-8 w-32" />
-        </div>
+  const retrySection = async (section: string) => {
+    setRetryingSection(section);
+    setSectionErrors((prev) => { const next = { ...prev }; delete next[section]; return next; });
+    try {
+      if (section === "stats") {
+        const d = await dashboardApi.getSummary();
+        setStats((d.totals as Record<string, unknown>) ?? d);
+      }
+      if (section === "charts") setCharts(await dashboardApi.getDashboardCharts(dateFilter.start, dateFilter.end));
+      if (section === "popular") {
+        const d = await dashboardApi.getPopularContent();
+        setPopular(normalizePopular(d));
+      }
+      if (section === "logs") setLogs((await dashboardApi.getRecentLogsPage()).rows as any[]);
+      if (section === "cloudflare") setCloudflareAnalytics(await dashboardApi.getCloudflareAnalytics());
+    } catch {
+      setSectionErrors((prev) => ({ ...prev, [section]: "โหลดข้อมูลไม่สำเร็จ" }));
+    } finally {
+      setRetryingSection(null);
+    }
+  };
 
-        {/* Stats Grid Skeleton */}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!filterReady) return;
+    fetchData(dateFilter.start, dateFilter.end);
+  }, [isSuperAdmin, dateFilterKey, filterReady]); // use stable key string, not object reference
+
+  return (
+    <div className="space-y-6">
+      {/* Header and Filter */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Overview</h2>
+      </div>
+
+      <DashboardFilterBar 
+        onFilterChange={(start, end) => {
+          setDateFilter({ start, end });
+          setFilterReady(true);
+        }}
+      />
+
+      {loading ? (
+        <div className="space-y-6">
+          {/* Stats Grid Skeleton */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="flex flex-col p-6 bg-white dark:bg-slate-950 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+            <div key={i} className="flex flex-col p-6 bg-white dark:bg-slate-950 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-4">
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-20" />
@@ -85,45 +169,50 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* Charts & Popular Content Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Charts & Analytics Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Login Activity Skeleton */}
-          <div className="lg:col-span-2 bg-white dark:bg-slate-950 p-6 rounded-[2rem] border border-sky-50 dark:border-slate-800 shadow-sm space-y-4">
+          <div className="lg:col-span-2 bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
             <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-[300px] w-full rounded-xl" />
+            <Skeleton className="h-[300px] w-full rounded-md" />
           </div>
 
-          {/* Popular Content Skeleton */}
-          <div className="bg-white dark:bg-slate-950 p-6 rounded-[2rem] border border-sky-50 dark:border-slate-800 shadow-sm space-y-4">
+          {/* System Activity Skeleton */}
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
             <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-[300px] w-full rounded-md" />
+          </div>
+        </div>
+
+        {/* Analytics Row Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <Skeleton className="h-6 w-32 mb-4" />
+              <div className="flex justify-center">
+                <Skeleton className="h-[200px] w-[200px] rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom Section Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <Skeleton className="h-6 w-32 mb-4" />
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <Skeleton className="h-10 w-10 rounded-lg" />
-                  <div className="space-y-2 flex-1">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-3 w-1/2" />
-                  </div>
+                <div key={i} className="flex gap-2 items-center">
+                  <Skeleton className="h-4 w-4" />
+                  <Skeleton className="h-4 flex-1" />
+                  <Skeleton className="h-4 w-8" />
                 </div>
               ))}
             </div>
           </div>
-        </div>
-
-        {/* Bottom Section Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Content Distribution Skeleton */}
-          <div className="bg-white dark:bg-slate-950 p-6 rounded-[2rem] border border-sky-50 dark:border-slate-800 shadow-sm space-y-4">
-            <div className="flex justify-center">
-              <Skeleton className="h-6 w-40" />
-            </div>
-            <div className="flex justify-center py-4">
-              <Skeleton className="h-[250px] w-[250px] rounded-full" />
-            </div>
-          </div>
 
           {/* Recent Logs Skeleton */}
-          <div className="lg:col-span-2 bg-white dark:bg-slate-950 p-6 rounded-[2rem] border border-sky-50 dark:border-slate-800 shadow-sm space-y-4">
+          <div className="lg:col-span-2 bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
             <Skeleton className="h-6 w-40 mb-4" />
             <div className="space-y-3">
               {[...Array(5)].map((_, i) => (
@@ -141,115 +230,105 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Overview</h2>
-      </div>
-
+        </div>
+      ) : (
+        <>
       {/* Cloudflare Analytics - SuperAdmin Only */}
-      {isSuperAdmin && cloudflareAnalytics && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-2">
-                <MousePointerClick size={16} />
-                <span>Total Requests</span>
-              </div>
-              <p className="text-2xl font-bold text-sky-600 dark:text-sky-400">
-                {cloudflareAnalytics.totalRequests?.toLocaleString() || 0}
-              </p>
-            </div>
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-2">
-                <FileText size={16} />
-                <span>Total Page Views</span>
-              </div>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {cloudflareAnalytics.totalPageViews?.toLocaleString() || 0}
-              </p>
-            </div>
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-2">
-                <Eye size={16} />
-                <span>Unique Visitors</span>
-              </div>
-              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                {cloudflareAnalytics.totalUniqueVisitors?.toLocaleString() || 0}
-              </p>
-            </div>
+      {isSuperAdmin && (
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+            <StatsCard label="Total Requests" value={cloudflareAnalytics?.totalRequests ?? 0} icon={MousePointerClick} />
+            <StatsCard label="Total Page Views" value={cloudflareAnalytics?.totalPageViews ?? 0} icon={FileText} />
+            <StatsCard label="Unique Visitors" value={cloudflareAnalytics?.totalUniqueVisitors ?? 0} icon={Eye} />
           </div>
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 ">
-        <StatsCard
-          label="Users"
-          value={stats?.users || 0}
-          icon={Users}
-          trend=""
-          colorClass="text-sky-500"
-          bgClass="bg-sky-50 dark:bg-sky-900/20"
-        />
-        <StatsCard
-          label="Activities"
-          value={stats?.activities || 0}
-          icon={Package}
-          trend=""
-          colorClass="text-blue-500"
-          bgClass="bg-blue-50 dark:bg-blue-900/20"
-        />
-        <StatsCard
-          label="News"
-          value={stats?.news || 0}
-          icon={Newspaper}
-          trend=""
-          colorClass="text-purple-500"
-          bgClass="bg-purple-50 dark:bg-purple-900/20"
-        />
-        <StatsCard
-          label="Blogs"
-          value={stats?.blogs || 0}
-          icon={FileText}
-          trend=""
-          colorClass="text-orange-500"
-          bgClass="bg-orange-50 dark:bg-orange-900/20"
-        />
+      <DashboardPanel title="สถิติ" error={sectionErrors.stats} retry={() => retrySection("stats")} retrying={retryingSection === "stats"}>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+          <StatsCard label="Users" value={stats?.users || 0} icon={Users} />
+          <StatsCard label="Activities" value={stats?.activities || 0} icon={Package} />
+          <StatsCard label="News" value={stats?.news || 0} icon={Newspaper} />
+          <StatsCard label="Blogs" value={stats?.blogs || 0} icon={FileText} />
+          <StatsCard label="Prayer Rooms" value={stats?.prayerRooms || 0} icon={Globe} />
+        </div>
+      </DashboardPanel>
+
+      {/* Main Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DashboardPanel title="กราฟกิจกรรมระบบ" error={sectionErrors.charts} retry={() => retrySection("charts")} retrying={retryingSection === "charts"}>
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h3 className="font-bold mb-4 text-slate-900 dark:text-white">System Activity</h3>
+            <SystemActivityChart data={charts?.systemActivity || []} />
+          </div>
+        </DashboardPanel>
+        <DashboardPanel title="กราฟการเข้าสู่ระบบ" error={sectionErrors.charts} retry={() => retrySection("charts")} retrying={retryingSection === "charts"}>
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h3 className="font-bold mb-4 text-slate-900 dark:text-white">Login Activity</h3>
+            <LoginActivityChart data={charts?.loginActivity || []} />
+          </div>
+        </DashboardPanel>
       </div>
 
-      {/* Charts & Popular Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Login Activity - Spans 2 cols */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-950 p-6 rounded-[2rem] border border-sky-50 dark:border-slate-800 shadow-sm">
-          <h3 className="font-bold mb-4 text-slate-900 dark:text-white">Login Activity</h3>
-          <LoginActivityChart data={charts?.loginActivity || []} />
-        </div>
-
-        {/* Popular Content */}
-        <div className="bg-white dark:bg-slate-950 p-6 rounded-[2rem] border border-sky-50 dark:border-slate-800 shadow-sm">
-          <h3 className="font-bold mb-4 text-slate-900 dark:text-white">Popular Activities</h3>
-          <PopularContentList content={popular} />
-        </div>
+      {/* Analytics Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <DashboardPanel title="ประเภทเนื้อหา" error={sectionErrors.charts} retry={() => retrySection("charts")} retrying={retryingSection === "charts"}>
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h3 className="font-bold mb-4 text-slate-900 dark:text-white">Content Types</h3>
+            <ContentDistributionChart data={charts?.contentDistribution || []} />
+          </div>
+        </DashboardPanel>
+        <DashboardPanel title="สถานะเนื้อหา" error={sectionErrors.charts} retry={() => retrySection("charts")} retrying={retryingSection === "charts"}>
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h3 className="font-bold mb-4 text-slate-900 dark:text-white">Content Status</h3>
+            <ContentStatusChart data={charts?.contentStatus || []} />
+          </div>
+        </DashboardPanel>
+        <DashboardPanel title="การกระทำในระบบ" error={sectionErrors.charts} retry={() => retrySection("charts")} retrying={retryingSection === "charts"}>
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h3 className="font-bold mb-4 text-slate-900 dark:text-white">Action Distribution</h3>
+            <ActionDistributionChart data={charts?.actionDistribution || []} />
+          </div>
+        </DashboardPanel>
       </div>
 
       {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Content Distribution (Pie) */}
-        <div className="bg-white dark:bg-slate-950 p-6 rounded-[2rem] border border-sky-50 dark:border-slate-800 shadow-sm">
-          <h3 className="font-bold mb-4 text-center text-slate-900 dark:text-white">Content Distribution</h3>
-          <ContentDistributionChart data={charts?.contentDistribution || []} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <h3 className="font-bold mb-4 text-slate-900 dark:text-white">Top Authors</h3>
+          <TopAuthorsChart data={charts?.topAuthors || []} />
         </div>
+        <DashboardPanel title="Popular Activities" error={sectionErrors.popular} retry={() => retrySection("popular")} retrying={retryingSection === "popular"}>
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h3 className="font-bold mb-4 text-slate-900 dark:text-white">Popular Activities</h3>
+            <PopularContentList content={popular.activities} />
+          </div>
+        </DashboardPanel>
+        <DashboardPanel title="Popular Blogs" error={sectionErrors.popular} retry={() => retrySection("popular")} retrying={retryingSection === "popular"}>
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h3 className="font-bold mb-4 text-slate-900 dark:text-white">Popular Blogs</h3>
+            <PopularContentList content={popular.blogs.map((item) => ({ ...item, name_th: item.title, name_eng: item.slug, images: item.coverImage ? [item.coverImage] : [] }))} />
+          </div>
+        </DashboardPanel>
+        <DashboardPanel title="Popular News" error={sectionErrors.popular} retry={() => retrySection("popular")} retrying={retryingSection === "popular"}>
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h3 className="font-bold mb-4 text-slate-900 dark:text-white">Popular News</h3>
+            <PopularContentList content={popular.news.map((item) => ({ ...item, name_th: item.name, name_eng: item.description, images: item.images || [] }))} />
+          </div>
+        </DashboardPanel>
+      </div>
 
-        {/* Recent Logs - Spans 2 cols */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-950 p-6 rounded-[2rem] border border-sky-50 dark:border-slate-800 shadow-sm">
+
+      {/* Recent Logs Section */}
+      {isSuperAdmin && (
+        <DashboardPanel title="Recent System Logs" error={sectionErrors.logs} retry={() => retrySection("logs")} retrying={retryingSection === "logs"}>
+        <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <h3 className="font-bold mb-4 text-slate-900 dark:text-white">Recent System Logs</h3>
           <RecentLogsTable logs={logs} />
         </div>
-      </div>
+        </DashboardPanel>
+      )}
+        </>
+      )}
     </div>
   );
 }

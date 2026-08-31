@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { handle, ok } from '@/lib/http/response';
-import { requireRole, Role } from '@/lib/auth/guard';
+import { requireMenuPermission } from '@/lib/auth/guard';
 import { blogRepo } from '@/lib/repositories/blogRepo';
 
 const updateSchema = z.object({
@@ -11,6 +11,9 @@ const updateSchema = z.object({
     tags: z.array(z.string()).optional(),
     author: z.string().optional(),
     group: z.string().optional(),
+    series: z.object({ name: z.string(), order: z.number() }).nullable().optional(),
+    referenceUrl: z.string().optional(),
+    deletedImages: z.array(z.string()).optional(),
     slug: z.string().optional(),
     status: z.enum(['draft', 'published']).optional(),
     coverImage: z.string().optional(),
@@ -30,7 +33,7 @@ export const GET = handle(async (_req, { params }) => {
 });
 
 export const PUT = handle(async (req, { params }) => {
-    await requireRole(Role.ADMIN, Role.SUPERADMIN);
+    await requireMenuPermission('/admin/blog/content');
     const { id } = await params;
     const dto = updateSchema.parse(await req.json());
     const blog = await blogRepo.update(id, dto);
@@ -38,7 +41,7 @@ export const PUT = handle(async (req, { params }) => {
 });
 
 export const DELETE = handle(async (_req, { params }) => {
-    await requireRole(Role.ADMIN, Role.SUPERADMIN);
+    await requireMenuPermission('/admin/blog/content');
     const { id } = await params;
     await blogRepo.delete(id);
     return ok(null, 'Blog deleted successfully');

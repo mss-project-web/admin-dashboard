@@ -37,6 +37,9 @@ function parseDeleteImages(v: unknown): string[] {
 function build(raw: Record<string, unknown>): Omit<ParsedPrayerRoom, 'newImages'> {
     const fields: PrayerRoomFields = {
         name: raw.name as string | undefined,
+        name_th: raw.name_th as string | undefined,
+        name_en: raw.name_en as string | undefined,
+        slug: raw.slug as string | undefined,
         place: raw.place as string | undefined,
         detail: raw.detail as string | undefined,
         faculty: raw.faculty as string | undefined,

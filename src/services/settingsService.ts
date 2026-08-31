@@ -1,4 +1,5 @@
 import api from "@/lib/axios";
+import { ApiEnvelope, unwrapResponse } from '@/lib/axios/types';
 
 export interface Phone { label: string; number: string; }
 
@@ -23,21 +24,21 @@ export interface SiteSettings {
 
 export const settingsService = {
     get: async (): Promise<SiteSettings> => {
-        const response = await api.get<{ status: string; data: SiteSettings }>("/settings");
-        return response.data.data;
+        const response = await api.get<ApiEnvelope<SiteSettings>>("/settings");
+        return unwrapResponse(response);
     },
 
     update: async (data: SiteSettings) => {
-        const response = await api.put("/settings", data);
-        return response.data;
+        const response = await api.put<ApiEnvelope<SiteSettings>>("/settings", data);
+        return unwrapResponse(response);
     },
 
     uploadQr: async (file: File): Promise<string> => {
         const formData = new FormData();
         formData.append("file", file);
-        const response = await api.post<{ status: string; data: { url: string } }>("/blog/upload", formData, {
+        const response = await api.post<ApiEnvelope<{ url: string }>>("/blog/upload", formData, {
             headers: { "Content-Type": "multipart/form-data" },
         });
-        return response.data.data.url;
+        return unwrapResponse(response).url;
     },
 };

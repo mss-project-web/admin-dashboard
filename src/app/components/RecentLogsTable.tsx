@@ -6,6 +6,7 @@ interface Log {
     _id: string;
     action: string;
     resource: string;
+    userId?: string;
     details: {
         email?: string;
         [key: string]: any;
@@ -22,7 +23,7 @@ const getActionColor = (action: string) => {
     switch (action) {
         case 'LOGIN': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20';
         case 'Error': return 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20';
-        default: return 'bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400 border border-sky-200 dark:border-sky-500/20';
+        default: return 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20';
     }
 };
 
@@ -52,7 +53,7 @@ export const RecentLogsTable = ({ logs }: RecentLogsTableProps) => {
                             <tr key={log._id} className="bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                                 <td className="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">
                                     <div className="flex flex-col">
-                                        <span>{log.details.email || 'Unknown'}</span>
+                                        <span title={log.userId || 'System'}>{log.details?.email || (log.userId ? `User: ${log.userId.substring(0,8)}...` : 'Unknown')}</span>
                                         <span className="text-[10px] text-slate-400 font-mono mt-0.5">{log.ip}</span>
                                     </div>
                                 </td>
@@ -126,6 +127,8 @@ export const RecentLogsTable = ({ logs }: RecentLogsTableProps) => {
 
                     <div className="flex gap-1">
                         <button
+                            type="button"
+                            aria-label="หน้าก่อนหน้า"
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                             disabled={currentPage === 1}
                             className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
@@ -133,6 +136,8 @@ export const RecentLogsTable = ({ logs }: RecentLogsTableProps) => {
                             <ChevronLeft size={16} />
                         </button>
                         <button
+                            type="button"
+                            aria-label="หน้าถัดไป"
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                             disabled={currentPage === totalPages}
                             className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"

@@ -21,6 +21,22 @@ function withCors(res: NextResponse, origin: string | null): NextResponse {
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
+    const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method);
+    const isCron = pathname.startsWith('/api/cron/');
+    const hasSession = request.cookies.has('session');
+
+    // Cookie-authenticated browser mutations must carry a same-site/allowed
+    // Origin. Server-to-server calls such as Vercel Cron have no Origin and
+    // are handled by their own bearer-secret check.
+    if (pathname.startsWith('/api') && isMutation && hasSession && !isCron) {
+        const origin = request.headers.get('origin');
+        const sameOrigin = origin === request.nextUrl.origin;
+        const allowedOrigin = origin ? ALLOWED_ORIGINS.includes(origin) : false;
+        if (!origin || (!sameOrigin && !allowedOrigin)) {
+            return NextResponse.json({ status: 'fail', message: 'CSRF validation failed' }, { status: 403 });
+        }
+    }
+
     // ---- API: CORS + preflight (no auth redirects) ----
     if (pathname.startsWith('/api')) {
         const origin = request.headers.get('origin');
@@ -31,15 +47,14 @@ export function middleware(request: NextRequest) {
     }
 
     // ---- Pages: cookie-based auth gate ----
-    const hasSession = request.cookies.has('session');
-    const isLoginPage = pathname === '/auth/login';
+    const isAuthPage = pathname.startsWith('/auth/');
 
-    if (!hasSession && !isLoginPage) {
+    if (!hasSession && !isAuthPage) {
         return NextResponse.redirect(new URL('/auth/login', request.url));
     }
 
     if (hasSession) {
-        if (isLoginPage) return NextResponse.redirect(new URL('/menu', request.url));
+        if (isAuthPage) return NextResponse.redirect(new URL('/menu', request.url));
         if (pathname === '/') return NextResponse.redirect(new URL('/menu', request.url));
     }
 
